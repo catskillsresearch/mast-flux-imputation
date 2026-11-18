@@ -1,0 +1,36 @@
+[project]
+name = "mast-flux-imputation"
+version = "0.1.0"
+description = "MAST poloidal flux imputation in the absence of direct magnetic sensors: OSF forward Grad-Shafranov solver + M9 archive-trained flux predictor, FEC scoring, and a MAST-only browser viewer."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Lars Warren Ericson (Catskills Research Company)" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",          # elliptic integrals K(k^2), E(k^2); interp1d
+    "pyarrow>=14",          # parquet rows
+    "contourpy>=1.2",       # OSF flux-surface tracing + viewer isolines
+    "scikit-image>=0.22",   # FEC scorer LCFS marching squares (organizer pins 0.25.2)
+    "torch>=2.2",           # M9 inference / training
+    "scikit-learn>=1.3",    # M9 PCA basis + |Ip| 2-means fence (training only)
+]
+
+[project.optional-dependencies]
+fetch = [
+    "huggingface_hub>=0.23",  # data/fec/fetch.py
+    "s3fs>=2024.2",           # data/fair_mast/*.py (anonymous FAIR-MAST S3)
+    "xarray>=2024.1",
+    "zarr>=2.17",
+    "pandas>=2.1",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["models", "models.osf", "models.m9", "pipeline", "app", "app.fec_site"]
+
+[tool.setuptools.package-data]
+"app.fec_site" = ["static/*.css"]

@@ -1,0 +1,42 @@
+# --- data / weights never go in git -------------------------------------------
+*.parquet
+*.pt
+*.pth
+*.ckpt
+*.npz
+!fec_scoring/masks/mast_envelope.npz
+*.zarr/
+*.tar
+*.tar.gz
+*.zip
+*.bundle
+*.h5
+*.hdf5
+
+# fetched / ingested data stay local
+data/fec/mast_public_test/
+data/fec/demo/
+data/fair_mast/parquet/
+data/fair_mast/labels/
+data/fair_mast/cache/
+models/m9/weights/
+
+# run outputs
+outputs/
+*.log
+
+# python / tooling
+__pycache__/
+*.py[cod]
+.venv/
+.uv-cache/
+.cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+.DS_Store
+.env
+data/fec/.hf_snapshot/
