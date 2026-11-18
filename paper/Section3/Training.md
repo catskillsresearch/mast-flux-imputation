@@ -18,4 +18,4 @@ The recipe (`models/m9/train.py`, a port of the original with flags
 
 During extraction the split, QC keep list and $I_p^{\rm lo}$ were reproduced exactly and a one-epoch
 smoke test ran, but a full retrain was not carried out; the shipped weights are verified by
-sha256 instead (Section 8).
+sha256 instead (Section 9).

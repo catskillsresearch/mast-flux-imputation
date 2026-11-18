@@ -23,7 +23,7 @@ What each component was trained, tuned or evaluated on, as established from the 
 10. The sealed-80 holdout is label-disjoint from M9 training, but OSF's global factors and shape
     choices were tuned with public-test probes and the demo shots.
 11. The holdout inputs are processed by the archive ingest, which differs from the FEC rows in
-    current resampling, edge-Thomson source and core radius table (Section 8.3).
+    current resampling, edge-Thomson source and core radius table (Section 9.3).
 12. The shipped M9 weights match their recorded `SHA256SUMS`.
 
 The same list, with file-level detail, is in `DATA_PROVENANCE.md` of the repository.

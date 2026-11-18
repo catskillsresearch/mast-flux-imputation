@@ -13,4 +13,4 @@ over Thomson chords, interpolated to the EFIT time, whose radius lies inside the
 $R\in[r_{\rm in},r_{\rm out}]$, with $a=(r_{\rm out}-r_{\rm in})/2$. Per frame the value is
 clipped to $[0.2,4]$; over the shot a 7-frame running median removes single laser spikes, and the
 result is multiplied by $(1-0.2\,w)$. The pressure is a midplane line average, not a volume average,
-which is one reason the $\beta_N$ skill is limited (Section 7).
+which is one reason the $\beta_N$ skill is limited (Section 8).

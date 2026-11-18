@@ -29,4 +29,4 @@ the ingest is overlaid from `aye` (60 of 65 shots).
 
 **Caveat.** OSF was not fitted to these shots' labels, but its global scalar factors were tuned
 against aggregate leaderboard scores on the public-test fold, and the FAIR-MAST pool likely
-overlaps the FEC hidden folds (Section 8).
+overlaps the FEC hidden folds (Section 9).

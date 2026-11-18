@@ -11,4 +11,4 @@ $$
 
 with $c^{*}=1.062242$ and $s^{*}=1.078508$. The OSF read-outs are evaluated on the OSF flux, not on
 the M9 flux. The factors were obtained from aggregate leaderboard scores on the FEC public-test fold
-(Section 8).
+(Section 9).

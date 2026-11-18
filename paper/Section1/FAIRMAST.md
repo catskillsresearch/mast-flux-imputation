@@ -19,3 +19,5 @@ populations differ only because the archive keeps all slices (ramp-up, limited, 
 `data/fair_mast/fetch_efit_labels.py` adds the scalar labels and the diverted flag. Its rule (any
 finite `efm/xpoint{1,2}_rc`) reproduces the FEC frame selection on all three demo shots, and its
 `q_95`, `betan` and edge-Thomson arrays match the FEC demo rows exactly (`tests/test_labels.py`).
+For the three validation shots 28348, 28350 and 28351, the FAIR-MAST EFIT++ $\psi$, $q_{95}$ and
+$\beta_N$ labels are bit-for-bit identical to the challenge organizers' release.

@@ -250,6 +250,7 @@ a child note, one link hop = one section level), readable on their own and compi
 
 ```bash
 MPLCONFIGDIR=/tmp/mpl .venv/bin/python scripts/make_result_figures.py  # figures + tables from outputs/
+.venv/bin/python scripts/make_audit_tables.py      # audit tables from outputs/audit/*_shipped
 python3 scripts/compile_md_tree.py      # notes -> paper/arxiv.md -> paper/arxiv.tex -> paper/MAST.pdf
 bash scripts/build_paper_pdf.sh         # re-flatten and rebuild the PDF only
 ```
@@ -257,7 +258,8 @@ bash scripts/build_paper_pdf.sh         # re-flatten and rebuild the PDF only
 `compile_md_tree.py --md-only` / `--tex-only` stop early. Needs `pip install -e .[paper]`, pandoc,
 latexmk/pdflatex and Graphviz (`dot -Tpdf paper/figures/src/X.dot` re-renders a diagram). The build
 fails on any undefined citation or reference. Result tables in `paper/generated/` are written by
-`make_result_figures.py` from the saved `outputs/*.score.json`, so the paper never hand-copies a
+`make_result_figures.py` and `make_audit_tables.py` from the saved `outputs/*.score.json` and
+`outputs/audit/*/summary.json`, so the paper never hand-copies a
 number.
 
 ## Repository layout

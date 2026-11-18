@@ -13,6 +13,8 @@ python -m models.m9.train --member all
 python -m pipeline.predict --split holdout --mode osf
 python -m pipeline.predict --split holdout --mode hybrid
 python -m pipeline.score outputs/holdout_hybrid.npz
+python -m pipeline.audit outputs/holdout_hybrid.npz \
+    --tag holdout_hybrid_shipped          # route quantities
 python -m app.fec_site --port 8770
 ```
 
