@@ -109,7 +109,7 @@
 \maketitle
 \begin{center}\small\textbf{ORCID:} 0000-0001-8299-9361\end{center}
 \begin{abstract}
-We reconstruct the poloidal magnetic flux \(\psi(R,Z)\) of MAST plasmas on a \(65\times65\) grid, together with the edge safety factor \(q_{95}\) and the normalised beta \(\beta_N\), using only the poloidal-field coil currents, the plasma current \(I_p\), the toroidal-field current and midplane Thomson scattering. No magnetic probe or flux-loop signal enters either model. Two models are described. OSF is a free-boundary Grad--Shafranov forward solver: an elliptic-integral Green's-function vacuum field over the 812-element MAST coil set, a prescribed-shape current density fixed by an Ampère constraint and iterated to self-consistency, a flux-surface integral for \(q_{95}\) and a Thomson pressure moment for \(\beta_N\). M9 is a PCA-basis neural surrogate: a residual network maps measured inputs to 60 principal-component coefficients of EFIT++ flux, trained on 3,622 FAIR-MAST archive shots; despite its legacy file name it is not physics-informed. On a sealed, seed-42 holdout of FAIR-MAST shots disjoint from M9 training (65 shots, 3,449 diverted frames), scored with the Fusion Equilibrium Challenge metric, OSF reaches \(S=0.618634\) (\(R^2_\psi=0.917210\)) and the hybrid M9 + OSF reaches \(S=0.862677\) (\(R^2_\psi=0.997771\), \(1-D_{\rm LCFS}=0.945207\)), while \(q_{95}\) and \(\beta_N\) remain weak (\(R^2=0.342298\) and \(0.394260\)). We document exactly what each component was fitted to, including clarifications to earlier project documentation, and propose an automated failure-mode audit to replace visual inspection when training at archive scale.
+We reconstruct the poloidal magnetic flux \(\psi(R,Z)\) of MAST plasmas on a \(65\times65\) grid, together with the edge safety factor \(q_{95}\) and the normalised beta \(\beta_N\), using only the poloidal-field coil currents, the plasma current \(I_p\), the toroidal-field current and midplane Thomson scattering. No magnetic probe or flux-loop signal enters either model. Two models are described. OSF is a free-boundary Grad--Shafranov forward solver: an elliptic-integral Green's-function vacuum field over the 812-element MAST coil set, a prescribed-shape current density fixed by an Ampère constraint and iterated to self-consistency, a flux-surface integral for \(q_{95}\) and a Thomson pressure moment for \(\beta_N\). M9 is a PCA-basis neural surrogate: a residual network maps measured inputs to 60 principal-component coefficients of EFIT++ flux, trained on 3,622 FAIR-MAST archive shots; despite its legacy file name it is not physics-informed. On a sealed, seed-42 holdout of FAIR-MAST shots disjoint from M9 training (65 shots, 3,449 diverted frames), scored with the Fusion Equilibrium Challenge metric, OSF reaches \(S=0.618634\) (\(R^2_\psi=0.917210\)) and the hybrid M9 + OSF reaches \(S=0.862677\) (\(R^2_\psi=0.997771\), \(1-D_{\rm LCFS}=0.945207\)), while \(q_{95}\) and \(\beta_N\) remain weak (\(R^2=0.342298\) and \(0.394260\)). We document exactly what data each component was trained or tuned on, and propose an automated failure-mode audit to replace visual inspection when training at archive scale.
 \end{abstract}
 \clearpage
 \tableofcontents
@@ -142,7 +142,7 @@ This paper describes, at the level of the code, a MAST-only system for this task
 \item
   Measured results on a sealed 80-shot holdout, re-derived from the saved prediction files and cross-checked against an independent implementation of the scorer (Section 7).
 \item
-  A provenance audit, recording clarifications and updates to the earlier documentation, and a proposal for an automated failure-mode audit to sharpen training (Sections 8--9).
+  A record of the data each component was trained or tuned on (Section 8.2), and a proposal for an automated failure-mode audit to sharpen training (Sections 8--9).
 \end{enumerate}
 
 \hypertarget{related-work}{%
@@ -394,14 +394,14 @@ Because \(p'\) in \eqref{eq:jphi} depends on \(\Delta\psi\) and \(s_V\), and the
   update \(\psi^{(n)} = \psi_{\rm vac} + G\,j_\varphi\).
 \end{enumerate}
 
-The loop stops when \(\max|\psi^{(n)}-\psi^{(n-1)}|<10^{-4}\) Wb rad\(^{-1}\) \emph{and} the relative changes of \(W\), \(\Delta\psi\) and \(s_V\) are all below \(10^{-3}\), or after 20 passes. Earlier project documents describe OSF as ``one-shot'', in the sense that nothing is fitted to measured flux; numerically it is an iteration of up to 20 linear solves per frame.
+The loop stops when \(\max|\psi^{(n)}-\psi^{(n-1)}|<10^{-4}\) Wb rad\(^{-1}\) \emph{and} the relative changes of \(W\), \(\Delta\psi\) and \(s_V\) are all below \(10^{-3}\), or after 20 passes. ``One-shot'' in the name OSF means that nothing is fitted to measured flux; numerically OSF performs up to 20 Picard passes per frame.
 
 \hypertarget{magnetic-topology-o-point-x-points-lcfs}{%
 \subsection{Magnetic topology: O-point, X-points, LCFS}\label{magnetic-topology-o-point-x-points-lcfs}}
 
 The magnetic axis is the maximum of \(\psi\) (since \(\sigma_{\rm ax}=+1\)) inside the box \(R\in[0.65,1.05]\) m, \(|Z|\le0.5\) m. During the iteration the last closed surface is the outermost compact closed contour around the axis (elongation \(\le2.6\), vertical span \(\le2.8\) m, outer radius \(\ge1.0\) m, inner radius \(\le0.4\) m); candidate X-points are saddles in \(R\in[0.25,1.5]\) m with \(|Z|\ge0.4\) m.
 
-For the read-outs, OSF calls the \emph{scorer's} LCFS extractor (\nolinkurl{fec_scoring/lcfs.py}, marching squares via scikit-image \cite{vanderwalt2014}) restricted by the MAST vessel envelope \nolinkurl{mast_envelope.npz} (\texttt{mask\_coarse}). The envelope mask is used here in the \(q_{95}\) and \(\beta_N\) read-outs only (a clarification of the earlier documentation). If the scorer extractor fails, OSF falls back to its own closed-contour search.
+For the read-outs, OSF calls the \emph{scorer's} LCFS extractor (\nolinkurl{fec_scoring/lcfs.py}, marching squares via scikit-image \cite{vanderwalt2014}) restricted by the MAST vessel envelope \nolinkurl{mast_envelope.npz} (\texttt{mask\_coarse}). OSF uses the envelope mask in the \(q_{95}\) and \(\beta_N\) read-outs only. If the scorer extractor fails, OSF falls back to its own closed-contour search.
 
 \hypertarget{safety-factor-read-out}{%
 \subsection{Safety factor read-out}\label{safety-factor-read-out}}
@@ -426,7 +426,7 @@ q_{95} &= \big(0.55\,u + (1-u)\,d + h\big)\,q_{\rm map}.
 \label{eq:qlaw}
 \end{equation}
 
-The ``well'' weight \(u\) is 1 while the surface is long (ohmic phase), \(d\) raises \(q\) in the diverted phase, and \(h\) is a bump at the solenoid swing. If no closed surface is found the cylindrical estimate \(q^{*} = 5a^{2}|B_t|/(R_0 I_p[\mathrm{MA}])\) is returned. Earlier documents refer to a ``paramagnetic \(c=1.20\) baseline''; in the solver this role is played by the factor law above. The hybrid mode multiplies the OSF value by \(c^{*}/1.20\) (Section 5).
+The ``well'' weight \(u\) is 1 while the surface is long (ohmic phase), \(d\) raises \(q\) in the diverted phase, and \(h\) is a bump at the solenoid swing. If no closed surface is found the cylindrical estimate \(q^{*} = 5a^{2}|B_t|/(R_0 I_p[\mathrm{MA}])\) is returned. The hybrid mode multiplies the OSF value by \(c^{*}/1.20\) (Section 5).
 
 \hypertarget{normalised-beta-read-out}{%
 \subsection{Normalised beta read-out}\label{normalised-beta-read-out}}
@@ -523,7 +523,7 @@ z_t = C(\mathbf y_t-\mu)\in\mathbb R^{60},\qquad \hat{\mathbf y}_t = \mu + C^{\t
 \label{eq:pca}
 \end{equation}
 
-This is the proper orthogonal decomposition of the flux ensemble \cite{berkooz1993}. Because \(C\) has orthonormal rows, MSE on \(z\) equals pixel MSE of the \emph{projected} target. The basis is fitted with randomized SVD \cite{halko2011} (scikit-learn \cite{pedregosa2011}, seed 42, three power iterations) on at most 200,000 frames drawn shot-balanced from the training shots, after the \(|I_p|\) window of the next note. The PCA basis and mean are therefore built from FAIR-MAST EFIT++ labels; the earlier documentation is updated accordingly for M9 (Section 8.2).
+This is the proper orthogonal decomposition of the flux ensemble \cite{berkooz1993}. Because \(C\) has orthonormal rows, MSE on \(z\) equals pixel MSE of the \emph{projected} target. The basis is fitted with randomized SVD \cite{halko2011} (scikit-learn \cite{pedregosa2011}, seed 42, three power iterations) on at most 200,000 frames drawn shot-balanced from the training shots, after the \(|I_p|\) window of the next note. The PCA basis and mean are therefore built from FAIR-MAST EFIT++ labels (Section 8.2).
 
 \hypertarget{features-and-temporal-context}{%
 \subsection{Features and temporal context}\label{features-and-temporal-context}}
@@ -582,7 +582,7 @@ The recipe (\nolinkurl{models/m9/train.py}, a port of the original with flags \t
 \item
   \textbf{\(|I_p|\) window:} 2-means on all keep-shot frame values of \(|I_p|\) (seed 42); frames with \(|I_p|\) at or above the midpoint of the two centres, \(I_p^{\rm lo}=328.7293519015368\) kA, are used. 3,265 shots contribute frames. Limited and diverted frames are both included.
 \item
-  \textbf{PCA} with \(K=60\) (previous notes).
+  \textbf{PCA} with \(K=60\) (Section 4.2).
 \item
   \textbf{Validation:} 10\% of the windowed shots (seed-42 shuffle).
 \item
@@ -617,7 +617,7 @@ q_{95} = \mathrm{clip}\Big(q_{95}^{\rm OSF}\,\frac{c^{*}}{1.20},\,2,\,25\Big),\q
 \beta_N = \mathrm{clip}\big(\beta_N^{\rm OSF}\,s^{*},\,0.2,\,5\big),
 \]
 
-with \(c^{*}=1.062242\) and \(s^{*}=1.078508\). The OSF read-outs are evaluated on the OSF flux, not on the M9 flux. The factors were obtained from aggregate leaderboard scores on the FEC public-test fold (Section 8); a docstring in the source states \(s^{*}=1.000000\), but the code uses 1.078508.
+with \(c^{*}=1.062242\) and \(s^{*}=1.078508\). The OSF read-outs are evaluated on the OSF flux, not on the M9 flux. The factors were obtained from aggregate leaderboard scores on the FEC public-test fold (Section 8).
 
 \hypertarget{build-pipeline}{%
 \subsection{Build pipeline}\label{build-pipeline}}
@@ -1154,30 +1154,40 @@ tables of Section 7, regenerated from the saved score files & identical to the r
 
 Not verified: a full M9 retrain to matching weights (only a one-epoch smoke test was run; GPU non-determinism means a retrain reproduces the recipe, not the bytes), and predictions on the public-test fold.
 
-\hypertarget{provenance-documentation-versus-code}{%
-\subsection{Provenance: documentation versus code}\label{provenance-documentation-versus-code}}
+\hypertarget{data-use-and-tuning-facts}{%
+\subsection{Data use and tuning facts}\label{data-use-and-tuning-facts}}
 
-Reading the source line by line led to the following clarifications and updates of the earlier documentation. The material ones are:
+What each component was trained, tuned or evaluated on, as established from the code and data:
 
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \item
-  \emph{``No FAIR-MAST EFIT++ / archive reconstructions.''} M9's targets and PCA basis are FAIR-MAST EFIT++ \(\psi\) from 3,622 archive shots; the training code itself notes the pool overlaps the hidden test folds.
+  M9's training targets and PCA basis are FAIR-MAST EFIT++ \(\psi\) from 3,622 archive shots. The training pool very likely overlaps the FEC hidden test folds, so M9 is not a zero-shot result.
 \item
-  \emph{``\nolinkurl{mast_envelope.npz} not used as a mask.''} OSF's read-outs extract the LCFS with the scorer's envelope mask.
+  The checkpoint metadata records \texttt{train\_shots\ =\ 3622}; after the \(|I_p|\) window 3,265 shots contribute frames, and 10\% of those shots are the validation split. M9 trains on all windowed frames, limited ones included.
 \item
-  \emph{``Zero fitting against the 3 demo shots.''} OSF shape choices are justified by demo \(R^2\) values, and the M9 run's acceptance gate is demo \(R^2_\psi\ge0.9976\).
+  M9's loss is MSE on the 60 PCA coefficients only; its five scalar heads are untrained.
 \item
-  \emph{``\(c^{*}, s^{*}\) are frozen code hyperparameters.''} They were fitted from leaderboard probes on the public-test fold; one docstring gives \(s^{*}=1.000000\) where the code uses 1.078508.
+  OSF's read-outs extract the LCFS with the scorer's vessel-envelope mask (\nolinkurl{mast_envelope.npz}, \texttt{mask\_coarse}).
 \item
-  \emph{``Paramagnetic \(c=1.20\) baseline''} and \emph{``one-shot''} OSF: neither describes the solver (Sections 3.5 and 3.7).
+  OSF's shape parameters were chosen with reference to \(R^2\) values on the three labelled demo shots, and the M9 run's acceptance gate is demo \(R^2_\psi\ge0.9976\). The demo shots are therefore not held out for either model.
 \item
-  \emph{Ingest and demo differ in ``recording / \(\psi\) scale.''} The flux is bit-identical; the frame populations differ.
+  The hybrid factors \(c^{*}=1.062242\) and \(s^{*}=1.078508\) were fitted from leaderboard probes on the public-test fold.
 \item
-  \emph{``No magnetic sensors.''} True for model inputs; the EFIT++ labels used them.
+  OSF performs up to 20 Picard passes per frame (Section 3.5). Its \(q_{95}\) uses the vacuum \(F_b\) and an empirical factor law (Section 3.7); the hybrid map multiplies it by \(c^{*}/1.20\).
+\item
+  FAIR-MAST and FEC carry bit-identical EFIT++ \(\psi\) for the same shot and time; the two differ in frame population (all slices versus diverted slices only).
+\item
+  No magnetic sensor is a model input; the EFIT++ labels were reconstructed from magnetic sensors.
+\item
+  The sealed-80 holdout is label-disjoint from M9 training, but OSF's global factors and shape choices were tuned with public-test probes and the demo shots.
+\item
+  The holdout inputs are processed by the archive ingest, which differs from the FEC rows in current resampling, edge-Thomson source and core radius table (Section 8.3).
+\item
+  The shipped M9 weights match their recorded \texttt{SHA256SUMS}.
 \end{enumerate}
 
-The full list of seventeen items is kept in \nolinkurl{DATA_PROVENANCE.md} of the repository.
+The same list, with file-level detail, is in \nolinkurl{DATA_PROVENANCE.md} of the repository.
 
 \hypertarget{limitations}{%
 \subsection{Limitations}\label{limitations}}
@@ -1198,7 +1208,7 @@ The full list of seventeen items is kept in \nolinkurl{DATA_PROVENANCE.md} of th
 \item
   \textbf{No vessel currents} in OSF, and a fixed elliptical current support.
 \item
-  \textbf{Retrain not reproduced} end to end; see the previous note.
+  \textbf{Retrain not reproduced} end to end; see Section 8.1.
 \end{itemize}
 
 \hypertarget{future-work-an-automated-failure-mode-audit}{%
@@ -1299,7 +1309,7 @@ Every parameter (data sources and shot lists, seeds, QC thresholds, PCA rank, ne
 \clearpage
 \section{Conclusion}\label{conclusion}}
 
-Without magnetic sensors, a forward Grad--Shafranov solver driven by measured coil currents, plasma current and Thomson scattering recovers MAST poloidal flux with \(R^2_\psi=0.917210\) on a sealed archive holdout, but its boundary geometry and scalar read-outs are biased. A PCA-basis neural surrogate trained on EFIT++ flux of 3,622 QC-kept archive shots (3,265 contributing frames after the \(|I_p|\) window) raises \(R^2_\psi\) to 0.997771 and brings the LCFS within about 5\% of the major radius, giving a composite FEC score of 0.862677 in the hybrid configuration. The surrogate learns from magnetics-based reconstructions and is not physics-informed; the remaining weakness is in \(q_{95}\) and \(\beta_N\), which still come from simplified forward read-outs. The repository, the paper sources and all result tables are reproducible from public data, and the documentation now states exactly what each component was fitted to.
+Without magnetic sensors, a forward Grad--Shafranov solver driven by measured coil currents, plasma current and Thomson scattering recovers MAST poloidal flux with \(R^2_\psi=0.917210\) on a sealed archive holdout, but its boundary geometry and scalar read-outs are biased. A PCA-basis neural surrogate trained on EFIT++ flux of 3,622 QC-kept archive shots (3,265 contributing frames after the \(|I_p|\) window) raises \(R^2_\psi\) to 0.997771 and brings the LCFS within about 5\% of the major radius, giving a composite FEC score of 0.862677 in the hybrid configuration. The surrogate learns from magnetics-based reconstructions and is not physics-informed; the remaining weakness is in \(q_{95}\) and \(\beta_N\), which still come from simplified forward read-outs. The repository, the paper sources and all result tables are reproducible from public data, and the data each component was trained or tuned on is documented in Section 8.2.
 
 \hypertarget{references}{%
 \section*{References}\addcontentsline{toc}{section}{References}}

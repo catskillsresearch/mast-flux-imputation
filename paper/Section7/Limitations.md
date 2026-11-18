@@ -14,4 +14,4 @@
   pressure); M9's scalar heads are untrained.
 * **Non-causal context.** M9 uses EFIT frames up to four steps ahead; it is an offline smoother.
 * **No vessel currents** in OSF, and a fixed elliptical current support.
-* **Retrain not reproduced** end to end; see the previous note.
+* **Retrain not reproduced** end to end; see Section 8.1.

@@ -13,6 +13,5 @@ its legacy file name it is not physics-informed. On a sealed, seed-42 holdout of
 disjoint from M9 training (65 shots, 3,449 diverted frames), scored with the Fusion Equilibrium
 Challenge metric, OSF reaches $S=0.618634$ ($R^2_\psi=0.917210$) and the hybrid M9 + OSF reaches
 $S=0.862677$ ($R^2_\psi=0.997771$, $1-D_{\rm LCFS}=0.945207$), while $q_{95}$ and $\beta_N$ remain weak
-($R^2=0.342298$ and $0.394260$). We document exactly what each component was fitted to, including
-clarifications to earlier project documentation, and propose an automated failure-mode
+($R^2=0.342298$ and $0.394260$). We document exactly what data each component was trained or tuned on, and propose an automated failure-mode
 audit to replace visual inspection when training at archive scale.

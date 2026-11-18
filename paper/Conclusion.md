@@ -9,4 +9,4 @@ about 5% of the major radius, giving a composite FEC score of 0.862677 in the hy
 The surrogate learns from magnetics-based reconstructions and is not physics-informed; the remaining
 weakness is in $q_{95}$ and $\beta_N$, which still come from simplified forward read-outs. The
 repository, the paper sources and all result tables are reproducible from public data, and the
-documentation now states exactly what each component was fitted to.
+data each component was trained or tuned on is documented in Section 8.2.

@@ -10,7 +10,7 @@ is an algorithm switch, and what was *calibrated*:
   (where to look for the O-point / X-points, what counts as a compact closed contour).
 * ``SWITCHES``      -- which code path osf_0.0.12 takes (how I_p, pressure and F_b are read).
 * ``CALIBRATED``    -- the physics parameters set by the calibration (see docs/MODEL.md §OSF
-  and DATA_PROVENANCE.md §OSF tuning: physics end-members inspected on the 3 labelled
+  and DATA_PROVENANCE.md §4: physics end-members inspected on the 3 labelled
   starter-kit shots, plus 5 Codabench aggregate-score probes on mast_public_test).
 
 ``FINAL_SCALARS`` are the two post-hoc multipliers the shipped Phase-2 Final MAST submission

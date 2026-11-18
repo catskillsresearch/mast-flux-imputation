@@ -9,7 +9,7 @@ The recipe (`models/m9/train.py`, a port of the original with flags
 3. **$|I_p|$ window:** 2-means on all keep-shot frame values of $|I_p|$ (seed 42); frames with
    $|I_p|$ at or above the midpoint of the two centres, $I_p^{\rm lo}=328.7293519015368$ kA, are
    used. 3,265 shots contribute frames. Limited and diverted frames are both included.
-4. **PCA** with $K=60$ (previous notes).
+4. **PCA** with $K=60$ (Section 4.2).
 5. **Validation:** 10% of the windowed shots (seed-42 shuffle).
 6. **Optimisation:** AdamW [@loshchilov2019] (learning rate $10^{-3}$, weight decay $10^{-4}$),
    gradient-norm clip 1.0, batches of 2048 frames drawn shot-balanced (uniform shot, then uniform

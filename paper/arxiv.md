@@ -28,8 +28,7 @@ its legacy file name it is not physics-informed. On a sealed, seed-42 holdout of
 disjoint from M9 training (65 shots, 3,449 diverted frames), scored with the Fusion Equilibrium
 Challenge metric, OSF reaches $S=0.618634$ ($R^2_\psi=0.917210$) and the hybrid M9 + OSF reaches
 $S=0.862677$ ($R^2_\psi=0.997771$, $1-D_{\rm LCFS}=0.945207$), while $q_{95}$ and $\beta_N$ remain weak
-($R^2=0.342298$ and $0.394260$). We document exactly what each component was fitted to, including
-clarifications to earlier project documentation, and propose an automated failure-mode
+($R^2=0.342298$ and $0.394260$). We document exactly what data each component was trained or tuned on, and propose an automated failure-mode
 audit to replace visual inspection when training at archive scale.
 
 ## Introduction
@@ -68,7 +67,7 @@ sealed archive holdout.
    disjointness proof, training, prediction, scoring and a browser viewer (Section 5).
 4. Measured results on a sealed 80-shot holdout, re-derived from the saved prediction files and
    cross-checked against an independent implementation of the scorer (Section 7).
-5. A provenance audit, recording clarifications and updates to the earlier documentation, and a
+5. A record of the data each component was trained or tuned on (Section 8.2), and a
    proposal for an automated failure-mode audit to sharpen training (Sections 8–9).
 
 ### Related work
@@ -336,9 +335,9 @@ $\psi^{(0)}=\psi_{\rm vac}$, pass $n$:
 3. update $\psi^{(n)} = \psi_{\rm vac} + G\,j_\varphi$.
 
 The loop stops when $\max|\psi^{(n)}-\psi^{(n-1)}|<10^{-4}$ Wb rad$^{-1}$ *and* the relative
-changes of $W$, $\Delta\psi$ and $s_V$ are all below $10^{-3}$, or after 20 passes. Earlier project
-documents describe OSF as "one-shot", in the sense that nothing is fitted to measured flux;
-numerically it is an iteration of up to 20 linear solves per frame.
+changes of $W$, $\Delta\psi$ and $s_V$ are all below $10^{-3}$, or after 20 passes. "One-shot"
+in the name OSF means that nothing is fitted to measured flux; numerically OSF performs up to 20
+Picard passes per frame.
 
 ### Magnetic topology: O-point, X-points, LCFS
 
@@ -350,8 +349,8 @@ $|Z|\ge0.4$ m.
 
 For the read-outs, OSF calls the *scorer's* LCFS extractor (`fec_scoring/lcfs.py`, marching squares
 via scikit-image [@vanderwalt2014]) restricted by the MAST vessel envelope
-`mast_envelope.npz` (`mask_coarse`). The envelope mask is
-used here in the $q_{95}$ and $\beta_N$ read-outs only (a clarification of the earlier documentation). If the scorer extractor fails,
+`mast_envelope.npz` (`mask_coarse`). OSF uses the envelope
+mask in the $q_{95}$ and $\beta_N$ read-outs only. If the scorer extractor fails,
 OSF falls back to its own closed-contour search.
 
 ### Safety factor read-out
@@ -381,8 +380,7 @@ $$
 
 The "well" weight $u$ is 1 while the surface is long (ohmic phase), $d$ raises $q$ in the diverted
 phase, and $h$ is a bump at the solenoid swing. If no closed surface is found the cylindrical
-estimate $q^{*} = 5a^{2}|B_t|/(R_0 I_p[\mathrm{MA}])$ is returned. Earlier documents refer to a
-"paramagnetic $c=1.20$ baseline"; in the solver this role is played by the factor law above. The hybrid mode multiplies the
+estimate $q^{*} = 5a^{2}|B_t|/(R_0 I_p[\mathrm{MA}])$ is returned. The hybrid mode multiplies the
 OSF value by $c^{*}/1.20$ (Section 5).
 
 ### Normalised beta read-out
@@ -464,8 +462,7 @@ This is the proper orthogonal decomposition of the flux ensemble [@berkooz1993].
 orthonormal rows, MSE on $z$ equals pixel MSE of the *projected* target. The basis is fitted with
 randomized SVD [@halko2011] (scikit-learn [@pedregosa2011], seed 42, three power iterations) on at
 most 200,000 frames drawn shot-balanced from the training shots, after the $|I_p|$ window of the
-next note. The PCA basis and mean are therefore built from FAIR-MAST EFIT++ labels; the earlier
-documentation is updated accordingly for M9 (Section 8.2).
+next note. The PCA basis and mean are therefore built from FAIR-MAST EFIT++ labels (Section 8.2).
 
 ### Features and temporal context
 
@@ -516,7 +513,7 @@ The recipe (`models/m9/train.py`, a port of the original with flags
 3. **$|I_p|$ window:** 2-means on all keep-shot frame values of $|I_p|$ (seed 42); frames with
    $|I_p|$ at or above the midpoint of the two centres, $I_p^{\rm lo}=328.7293519015368$ kA, are
    used. 3,265 shots contribute frames. Limited and diverted frames are both included.
-4. **PCA** with $K=60$ (previous notes).
+4. **PCA** with $K=60$ (Section 4.2).
 5. **Validation:** 10% of the windowed shots (seed-42 shuffle).
 6. **Optimisation:** AdamW [@loshchilov2019] (learning rate $10^{-3}$, weight decay $10^{-4}$),
    gradient-norm clip 1.0, batches of 2048 frames drawn shot-balanced (uniform shot, then uniform
@@ -557,7 +554,7 @@ $$
 
 with $c^{*}=1.062242$ and $s^{*}=1.078508$. The OSF read-outs are evaluated on the OSF flux, not on
 the M9 flux. The factors were obtained from aggregate leaderboard scores on the FEC public-test fold
-(Section 8); a docstring in the source states $s^{*}=1.000000$, but the code uses 1.078508.
+(Section 8).
 
 ### Build pipeline
 
@@ -813,27 +810,35 @@ Not verified: a full M9 retrain to matching weights (only a one-epoch smoke test
 non-determinism means a retrain reproduces the recipe, not the bytes), and predictions on the
 public-test fold.
 
-### Provenance: documentation versus code
+### Data use and tuning facts
 
-Reading the source line by line led to the following clarifications and updates of the earlier
-documentation. The material ones are:
+What each component was trained, tuned or evaluated on, as established from the code and data:
 
-1. *"No FAIR-MAST EFIT++ / archive reconstructions."* M9's targets and PCA basis are FAIR-MAST
-   EFIT++ $\psi$ from 3,622 archive shots; the training code itself notes the pool overlaps the hidden
-   test folds.
-2. *"`mast_envelope.npz` not used as a mask."* OSF's read-outs extract the LCFS with the scorer's
-   envelope mask.
-3. *"Zero fitting against the 3 demo shots."* OSF shape choices are justified by demo $R^2$ values,
-   and the M9 run's acceptance gate is demo $R^2_\psi\ge0.9976$.
-4. *"$c^{*}, s^{*}$ are frozen code hyperparameters."* They were fitted from leaderboard probes on the
-   public-test fold; one docstring gives $s^{*}=1.000000$ where the code uses 1.078508.
-5. *"Paramagnetic $c=1.20$ baseline"* and *"one-shot"* OSF: neither describes the solver
-   (Sections 3.5 and 3.7).
-6. *Ingest and demo differ in "recording / $\psi$ scale."* The flux is bit-identical; the frame
-   populations differ.
-7. *"No magnetic sensors."* True for model inputs; the EFIT++ labels used them.
+1. M9's training targets and PCA basis are FAIR-MAST EFIT++ $\psi$ from 3,622 archive shots. The
+   training pool very likely overlaps the FEC hidden test folds, so M9 is not a zero-shot result.
+2. The checkpoint metadata records `train_shots = 3622`; after the $|I_p|$ window 3,265 shots
+   contribute frames, and 10% of those shots are the validation split. M9 trains on all windowed
+   frames, limited ones included.
+3. M9's loss is MSE on the 60 PCA coefficients only; its five scalar heads are untrained.
+4. OSF's read-outs extract the LCFS with the scorer's vessel-envelope mask (`mast_envelope.npz`,
+   `mask_coarse`).
+5. OSF's shape parameters were chosen with reference to $R^2$ values on the three labelled demo shots,
+   and the M9 run's acceptance gate is demo $R^2_\psi\ge0.9976$. The demo shots are therefore not
+   held out for either model.
+6. The hybrid factors $c^{*}=1.062242$ and $s^{*}=1.078508$ were fitted from leaderboard probes on
+   the public-test fold.
+7. OSF performs up to 20 Picard passes per frame (Section 3.5). Its $q_{95}$ uses the vacuum $F_b$ and
+   an empirical factor law (Section 3.7); the hybrid map multiplies it by $c^{*}/1.20$.
+8. FAIR-MAST and FEC carry bit-identical EFIT++ $\psi$ for the same shot and time; the two differ in
+   frame population (all slices versus diverted slices only).
+9. No magnetic sensor is a model input; the EFIT++ labels were reconstructed from magnetic sensors.
+10. The sealed-80 holdout is label-disjoint from M9 training, but OSF's global factors and shape
+    choices were tuned with public-test probes and the demo shots.
+11. The holdout inputs are processed by the archive ingest, which differs from the FEC rows in
+    current resampling, edge-Thomson source and core radius table (Section 8.3).
+12. The shipped M9 weights match their recorded `SHA256SUMS`.
 
-The full list of seventeen items is kept in `DATA_PROVENANCE.md` of the repository.
+The same list, with file-level detail, is in `DATA_PROVENANCE.md` of the repository.
 
 ### Limitations
 
@@ -851,7 +856,7 @@ The full list of seventeen items is kept in `DATA_PROVENANCE.md` of the reposito
   pressure); M9's scalar heads are untrained.
 * **Non-causal context.** M9 uses EFIT frames up to four steps ahead; it is an offline smoother.
 * **No vessel currents** in OSF, and a fixed elliptical current support.
-* **Retrain not reproduced** end to end; see the previous note.
+* **Retrain not reproduced** end to end; see Section 8.1.
 
 ## Future work: an automated failure-mode audit
 
@@ -967,6 +972,6 @@ about 5% of the major radius, giving a composite FEC score of 0.862677 in the hy
 The surrogate learns from magnetics-based reconstructions and is not physics-informed; the remaining
 weakness is in $q_{95}$ and $\beta_N$, which still come from simplified forward read-outs. The
 repository, the paper sources and all result tables are reproducible from public data, and the
-documentation now states exactly what each component was fitted to.
+data each component was trained or tuned on is documented in Section 8.2.
 
 ## References

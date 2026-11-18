@@ -8,6 +8,6 @@ $|Z|\ge0.4$ m.
 
 For the read-outs, OSF calls the *scorer's* LCFS extractor (`fec_scoring/lcfs.py`, marching squares
 via scikit-image [@vanderwalt2014]) restricted by the MAST vessel envelope
-`mast_envelope.npz` (`mask_coarse`). The envelope mask is
-used here in the $q_{95}$ and $\beta_N$ read-outs only (a clarification of the earlier documentation). If the scorer extractor fails,
+`mast_envelope.npz` (`mask_coarse`). OSF uses the envelope
+mask in the $q_{95}$ and $\beta_N$ read-outs only. If the scorer extractor fails,
 OSF falls back to its own closed-contour search.

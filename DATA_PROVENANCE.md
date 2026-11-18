@@ -1,9 +1,8 @@
 # Data provenance
 
-What every model input, label and parameter in this repository comes from, and where the
-statements in the source repository (catskills_fec `PROVENANCE.md`, `docs/mast-calibration.md`,
-script docstrings) do **not** match its code. Every statement below was checked against code or
-data during the extraction (2026-11-18).
+What every model input, label and parameter in this repository comes from, and what each
+component was trained, tuned or evaluated on. Every statement below was checked against code or
+data (2026-11-18).
 
 ## 1. Sources
 
@@ -41,7 +40,7 @@ the grid before a model sees a row.
 ## 4. Parameters
 
 ### OSF (`models/osf/calibration.py`)
-38 `CALIBRATED` scalars. Per catskills_fec `docs/mast-calibration.md`, they were set by inspecting
+38 `CALIBRATED` scalars, set by inspecting
 physics end-members on the 3 labelled starter-kit shots plus 5 Codabench aggregate-score probes on
 `mast_public_test`. There is no fitting code; the values are copied exactly. The post-hoc hybrid
 factors $c^\*=1.062242$ (with $q_{\rm ref}=1.20$) and $s^\*=1.078508$ were obtained from Codabench
@@ -80,27 +79,35 @@ Holdout processing vs. real FEC rows (limitations):
   shots); the chord radius is the shot's own `aye` mean (FEC uses campaign tables);
 * core `thomson_core_R` keeps the ingest's 131-entry archive radius (FEC rows: 130 chord radii).
 
-## 6. Clarifications to the catskills_fec documentation
+## 6. Data use and tuning facts
 
-| # | earlier documentation | clarification from code / data |
-|---|---|---|
-| 1 | `PROVENANCE.md`: "FAIR-MAST EFIT++ / archive reconstructions: No"; "M9 trained without forbidden MAST equilibrium labels" | M9 targets and PCA basis are FAIR-MAST EFIT++ `psirz` from 3,622 archive shots. The training code's own note: "overlaps hidden test fold; not a zero-shot claim". |
-| 2 | "`mast_envelope.npz` as prior/mask: No" | OSF `_extract_lcfs` loads `mast_envelope.npz` `mask_coarse` (the scorer's LCFS extractor) for the $q_{95}$/$\beta_N$ read-outs. |
-| 3 | "Labelled MAST demo equilibria as fit targets: No"; "zero fitting against 3 demo shots" | `mast-calibration.md` justifies shape-parameter choices with $R^2$ values that require labelled MAST frames; the M9 run's PASS gate is demo $R^2_\psi\ge0.9976$. |
-| 4 | $c^\*$, $s^\*$ are "frozen code hyperparameters" | fitted from Codabench leaderboard probes on the public-test fold. |
-| 5 | `generate_final_predictions.py` docstring: $s^\*=1.000000$ | code uses 1.078508. |
-| 6 | "paramagnetic $c=1.20$ baseline" | not in the solver: $q_{95}$ uses vacuum $F_b$ and an empirical factor law; the final map multiplies by $c^\*/1.20$. |
-| 7 | "one-shot" OSF | Picard iteration, up to 20 passes. |
-| 8 | ingest and demo differ by "recording / $\psi$ scale" | $\psi$ is bit-identical; the difference is the frame population (all slices vs diverted). |
-| 9 | checkpoint metadata `train_shots = 3622` | 3,265 contribute frames after the $|I_p|$ window; 10 % of shots are validation. |
-| 10 | — (clarification) | loss is MSE on the 60 PCA coefficients only; scalar heads untrained. |
-| 11 | — (clarification) | trained on all $|I_p|$-windowed frames, limited ones included. |
-| 12 | — (clarification) | shipped weights are in `archive/artifacts` (match `SHA256SUMS`); `artifacts/` holds an Oct 30 rebuild with different hashes, and the P36 result JSONs there were overwritten. |
-| 13 | "no magnetic sensors" | true for model inputs; the EFIT++ GT used them. |
-| 14 | OSF holdout numbers are blind | label-disjoint on the sealed-80, but $c^\*,s^\*$ and shape choices were tuned via public-test probes and the demo shots. |
-| 15 | archive ⟂ FEC folds | the FAIR-MAST pool (≈4,566 shots with EFIT + Thomson, of which FEC curated 2,416) very likely overlaps the FEC hidden folds. |
-| 16 | — | The proprietary catskills_fec `LICENSE` was initially copied here; resolved by the owner: this repository is Apache-2.0, copyright retained by Lars Warren Ericson (d/b/a Catskills Research Company). |
-| 17 | — | holdout input processing differs from FEC rows (§5). |
+1. M9 targets and PCA basis are FAIR-MAST EFIT++ `psirz` from 3,622 archive shots. The training
+   code notes that this pool overlaps the FEC hidden test folds; M9 is not a zero-shot result.
+2. The FAIR-MAST pool (≈4,566 shots with EFIT + Thomson, of which FEC curated 2,416) very likely
+   overlaps the FEC hidden folds.
+3. Checkpoint metadata records `train_shots = 3622`; 3,265 shots contribute frames after the $|I_p|$
+   window, and 10 % of those shots are validation.
+4. M9's loss is MSE on the 60 PCA coefficients only; the scalar heads are untrained.
+5. M9 trains on all $|I_p|$-windowed frames, limited ones included.
+6. OSF `_extract_lcfs` loads `mast_envelope.npz` `mask_coarse` (the scorer's LCFS extractor) for the
+   $q_{95}$/$\beta_N$ read-outs.
+7. OSF shape-parameter choices were made with reference to $R^2$ values on the labelled demo shots;
+   the M9 run's PASS gate is demo $R^2_\psi\ge0.9976$.
+8. $c^\*$ and $s^\*$ were fitted from Codabench leaderboard probes on the public-test fold; the code
+   uses $s^\*=1.078508$.
+9. OSF's $q_{95}$ uses the vacuum $F_b$ and an empirical factor law; the hybrid map multiplies it by
+   $c^\*/1.20$.
+10. OSF is a Picard iteration of up to 20 passes ("one-shot" = no fit to measured flux).
+11. Ingest and FEC demo rows carry bit-identical $\psi$; they differ in frame population (all slices
+    vs diverted).
+12. Shipped weights are in `archive/artifacts` (match `SHA256SUMS`); `artifacts/` on the lab drive
+    holds an Oct 30 rebuild with different hashes, and the P36 result JSONs there were overwritten.
+13. No magnetic sensor is a model input; the EFIT++ ground truth used magnetic sensors.
+14. OSF holdout numbers are label-disjoint on the sealed-80, but $c^\*,s^\*$ and shape choices were
+    tuned via public-test probes and the demo shots.
+15. Holdout input processing differs from FEC rows (§5).
+16. This repository is Apache-2.0; copyright is retained by Lars Warren Ericson (d/b/a Catskills
+    Research Company).
 
 ## 7. What is *not* in git
 
