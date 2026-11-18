@@ -13,7 +13,7 @@ data during the extraction (2026-11-18).
 | FEC starter kit | `github.com/Sophelio/fusion-equilibrium-challenge-starter`, `parquet_data/` (Git LFS) | per repository | 3 labelled MAST rows (28348, 28350, 28351), sha256 in `data/fec/fetch.py` |
 | FEC scorer v3.1.0 | starter kit `scoring/` | per repository | `fec_scoring/*.py` and `masks/mast_envelope.npz`, byte-identical |
 | FAIR-MAST | `s3://mast/level1/shots/<N>.zarr`, endpoint `https://s3.echo.stfc.ac.uk`, anonymous | CC BY-SA 4.0 | groups `efm` (EFIT++), `amc` (currents), `ayc` (core Thomson), `aye` (edge Thomson) |
-| catskills_fec | local repository, HEAD `a8f66617` | `LICENSE` (proprietary, copied here) | OSF code, M9 code + checkpoints, ingest, QC lists, viewer |
+| catskills_fec | local repository, HEAD `a8f66617` | proprietary (catskills_fec `LICENSE`, not copied; this repo is Apache-2.0) | OSF code, M9 code + checkpoints, ingest, QC lists, viewer |
 
 FEC (rows) and FAIR-MAST (archive) carry **bit-identical EFIT++ $\psi$** for the same shot and
 time; FEC keeps only diverted slices, rounds `efit_times` to whole ms, and resamples the currents
@@ -99,7 +99,7 @@ Holdout processing vs. real FEC rows (limitations):
 | 13 | "no magnetic sensors" | true for model inputs; the EFIT++ GT used them. |
 | 14 | OSF holdout numbers are blind | label-disjoint on the sealed-80, but $c^\*,s^\*$ and shape choices were tuned via public-test probes and the demo shots. |
 | 15 | archive ⟂ FEC folds | the FAIR-MAST pool (≈4,566 shots with EFIT + Thomson, of which FEC curated 2,416) very likely overlaps the FEC hidden folds. |
-| 16 | — | `LICENSE` is proprietary "all rights reserved" and was copied into this public repository; owner decision required. |
+| 16 | — | The proprietary catskills_fec `LICENSE` was initially copied here; resolved by the owner: this repository is Apache-2.0, copyright retained by Lars Warren Ericson (d/b/a Catskills Research Company). |
 | 17 | — | holdout input processing differs from FEC rows (§5). |
 
 ## 7. What is *not* in git

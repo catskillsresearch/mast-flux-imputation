@@ -258,4 +258,4 @@ docs/MODEL.md        derivations and parameter provenance
 tests/               parity and cross-check scripts
 ```
 
-Licence: see `LICENSE`. Data licences: FEC CC BY 4.0; FAIR-MAST CC BY-SA 4.0.
+Licence: Apache License 2.0 (see `LICENSE` and `NOTICE`); Copyright 2026 Lars Warren Ericson (d/b/a Catskills Research Company). Data licences: FEC CC BY 4.0; FAIR-MAST CC BY-SA 4.0.

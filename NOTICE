@@ -1,0 +1,9 @@
+MAST Poloidal Flux Imputation in the Absence of Direct Magnetic Sensors
+Copyright 2026 Lars Warren Ericson (d/b/a Catskills Research Company)
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+The copyright holder retains ownership of this work.
+
+Third-party data used with this software is not covered by this license:
+- FEC (Fusion Equilibrium Challenge) data: CC BY 4.0
+- FAIR-MAST data: CC BY-SA 4.0
