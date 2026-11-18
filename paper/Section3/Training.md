@@ -8,7 +8,11 @@ The recipe (`models/m9/train.py`, a port of the original with flags
    absolute deviations, or if it is short, non-finite or constant: 3,622 kept.
 3. **$|I_p|$ window:** 2-means on all keep-shot frame values of $|I_p|$ (seed 42); frames with
    $|I_p|$ at or above the midpoint of the two centres, $I_p^{\rm lo}=328.7293519015368$ kA, are
-   used. 3,265 shots contribute frames. Limited and diverted frames are both included.
+   used. 3,265 shots contribute frames; the other 357 are the 335 no-plasma shots of Section 2.2
+and 22 shots whose $|I_p|$ stays below the threshold. Limited and diverted frames are both
+included. The no-plasma shots contribute no training frame and do not enter the PCA basis, but
+their near-zero $|I_p|$ frames enter the 2-means fit: without them the same fit gives
+$I_p^{\rm lo}=471.99$ kA.
 4. **PCA** with $K=60$ (Section 4.2).
 5. **Validation:** 10% of the windowed shots (seed-42 shuffle).
 6. **Optimisation:** AdamW [@loshchilov2019] (learning rate $10^{-3}$, weight decay $10^{-4}$),

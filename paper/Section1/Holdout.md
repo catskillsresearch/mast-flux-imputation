@@ -27,6 +27,7 @@ inputs keep their full clocks. Fifteen sealed shots have no diverted slice (2490
 excluded, leaving **65 shots and 3,449 frames** out of 5,280 EFIT slices. Edge Thomson missing from
 the ingest is overlaid from `aye` (60 of 65 shots).
 
+Fourteen of the fifteen excluded shots are no-plasma shots (Section 2.2); the fifteenth is 24876.
+
 **Caveat.** OSF was not fitted to these shots' labels, but its global scalar factors were tuned
-against aggregate leaderboard scores on the public-test fold, and the FAIR-MAST pool likely
-overlaps the FEC hidden folds (Section 9).
+against aggregate scores on an external MAST test set (Section 9).

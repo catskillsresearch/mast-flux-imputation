@@ -15,7 +15,7 @@ $$
 The toroidal current density is therefore $j_\varphi = R\,p'(\psi) + FF'(\psi)/(\mu_0R)$.
 
 **Sign convention.** In the EFIT++/FAIR-MAST data the magnetic axis is a *maximum* of $\psi$; we
-write $\sigma_{\rm ax}=+1$ (DIII-D in the same challenge uses $-1$). OSF solves directly in this
+write $\sigma_{\rm ax}=+1$. OSF solves directly in this
 convention (`sigma_ax = 1`), so its output needs no sign flip, and the scorer's global sign probe
 selects $s=+1$ on every run reported here.
 

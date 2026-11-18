@@ -13,8 +13,12 @@ ingest (`data/fair_mast/ingest.py`) reads four groups per shot,
 
 and writes one row in the FEC schema plus `efit_psirz`. Static tables (coil geometry, chord
 positions) are copied from a released FEC row; they are given inputs, not labels. 3,738 shots
-were ingested. For the same shot and time, FAIR-MAST and FEC flux maps are bit-identical; the
-populations differ only because the archive keeps all slices (ramp-up, limited, ramp-down).
+(numbers 23240–30471) were ingested, keeping all EFIT slices (ramp-up, limited, ramp-down).
+
+**No-plasma shots.** 349 of the 3,738 shots carry a reduced EFIT++ product: 200 slices on a fixed
+5 ms clock (0–995 ms or $-50$–945 ms), 60 instead of about 150 `efm` variables, no scalar or
+X-point outputs, and $\max|I_p|\le46.8$ kA (median 9.1 kA). They are shots without a plasma,
+spread over the whole shot range. 335 are in the QC keep list and 14 in the sealed 80.
 
 `data/fair_mast/fetch_efit_labels.py` adds the scalar labels and the diverted flag. Its rule (any
 finite `efm/xpoint{1,2}_rc`) reproduces the FEC frame selection on all three demo shots, and its

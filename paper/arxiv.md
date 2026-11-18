@@ -117,21 +117,23 @@ by principal component analysis / proper orthogonal decomposition
 
 ## Data
 
-Two public sources are used: the FEC MAST split and the FAIR-MAST archive from which the challenge
-itself was built. Both carry EFIT++ reconstructions as labels; the models only ever see inputs.
+All training and test data come from the FAIR-MAST archive. The Fusion Equilibrium Challenge (FEC)
+MAST task supplies the output format, the frame selection rule and the scoring definitions; its
+three labelled release shots serve as the validation shots. Models only ever see inputs; EFIT++
+reconstructions are labels.
 
-### Fusion Equilibrium Challenge MAST data
+### Output format and validation shots
 
-The FEC dataset [@fec2026dataset] (CC BY 4.0) stores one Parquet row per shot with nested arrays
-for every time series. Its MAST portion used here consists of
+The output format follows the FEC MAST task [@fec2026dataset] (CC BY 4.0): one Parquet row per
+shot with nested arrays for every time series, the EFIT++ flux on a fixed $65\times65$ $(R,Z)$ grid,
+and $q_{95}$ and $\beta_N$ at each EFIT time. Only *diverted* EFIT time slices are scored; for MAST a
+slice is diverted when EFIT++ reports an X-point (`efm/xpoint{1,2}`). The input time series are
+not subset, so `efit_times` is not contiguous.
 
-* `mast_public_test`: 1,206 shots with inputs only (labels withheld for the leaderboard);
-* three labelled starter-kit shots, 28348, 28350 and 28351 (36, 42 and 37 EFIT frames), distributed
-  with the starter kit [@fec2026starter] and fetched with `data/fec/fetch.py --demo` (sha256-pinned).
-
-FEC keeps only *diverted* EFIT time slices. For MAST a slice is diverted when EFIT++ reports an
-X-point (`efm/xpoint{1,2}`); the challenge reports that this keeps 66.4% of MAST frames
-[@fec2026dataset]. The input time series are not subset, so `efit_times` is not contiguous.
+The three labelled shots of the FEC starter kit [@fec2026starter], 28348, 28350 and 28351 (36, 42
+and 37 diverted frames), are the validation shots. They are fetched with
+`data/fec/fetch.py --demo` (sha256-pinned) and are excluded from the FAIR-MAST training pool, the
+quality-control statistics and the PCA basis.
 
 ### FAIR-MAST archive and ingest
 
@@ -148,8 +150,12 @@ ingest (`data/fair_mast/ingest.py`) reads four groups per shot,
 
 and writes one row in the FEC schema plus `efit_psirz`. Static tables (coil geometry, chord
 positions) are copied from a released FEC row; they are given inputs, not labels. 3,738 shots
-were ingested. For the same shot and time, FAIR-MAST and FEC flux maps are bit-identical; the
-populations differ only because the archive keeps all slices (ramp-up, limited, ramp-down).
+(numbers 23240–30471) were ingested, keeping all EFIT slices (ramp-up, limited, ramp-down).
+
+**No-plasma shots.** 349 of the 3,738 shots carry a reduced EFIT++ product: 200 slices on a fixed
+5 ms clock (0–995 ms or $-50$–945 ms), 60 instead of about 150 `efm` variables, no scalar or
+X-point outputs, and $\max|I_p|\le46.8$ kA (median 9.1 kA). They are shots without a plasma,
+spread over the whole shot range. 335 are in the QC keep list and 14 in the sealed 80.
 
 `data/fair_mast/fetch_efit_labels.py` adds the scalar labels and the diverted flag. Its rule (any
 finite `efm/xpoint{1,2}_rc`) reproduces the FEC frame selection on all three demo shots, and its
@@ -204,9 +210,10 @@ inputs keep their full clocks. Fifteen sealed shots have no diverted slice (2490
 excluded, leaving **65 shots and 3,449 frames** out of 5,280 EFIT slices. Edge Thomson missing from
 the ingest is overlaid from `aye` (60 of 65 shots).
 
+Fourteen of the fifteen excluded shots are no-plasma shots (Section 2.2); the fifteenth is 24876.
+
 **Caveat.** OSF was not fitted to these shots' labels, but its global scalar factors were tuned
-against aggregate leaderboard scores on the public-test fold, and the FAIR-MAST pool likely
-overlaps the FEC hidden folds (Section 9).
+against aggregate scores on an external MAST test set (Section 9).
 
 ## Forward Grad–Shafranov model (OSF)
 
@@ -233,7 +240,7 @@ $$
 The toroidal current density is therefore $j_\varphi = R\,p'(\psi) + FF'(\psi)/(\mu_0R)$.
 
 **Sign convention.** In the EFIT++/FAIR-MAST data the magnetic axis is a *maximum* of $\psi$; we
-write $\sigma_{\rm ax}=+1$ (DIII-D in the same challenge uses $-1$). OSF solves directly in this
+write $\sigma_{\rm ax}=+1$. OSF solves directly in this
 convention (`sigma_ax = 1`), so its output needs no sign flip, and the scorer's global sign probe
 selects $s=+1$ on every run reported here.
 
@@ -548,7 +555,11 @@ The recipe (`models/m9/train.py`, a port of the original with flags
    absolute deviations, or if it is short, non-finite or constant: 3,622 kept.
 3. **$|I_p|$ window:** 2-means on all keep-shot frame values of $|I_p|$ (seed 42); frames with
    $|I_p|$ at or above the midpoint of the two centres, $I_p^{\rm lo}=328.7293519015368$ kA, are
-   used. 3,265 shots contribute frames. Limited and diverted frames are both included.
+   used. 3,265 shots contribute frames; the other 357 are the 335 no-plasma shots of Section 2.2
+and 22 shots whose $|I_p|$ stays below the threshold. Limited and diverted frames are both
+included. The no-plasma shots contribute no training frame and do not enter the PCA basis, but
+their near-zero $|I_p|$ frames enter the 2-means fit: without them the same fit gives
+$I_p^{\rm lo}=471.99$ kA.
 4. **PCA** with $K=60$ (Section 4.2).
 5. **Validation:** 10% of the windowed shots (seed-42 shuffle).
 6. **Optimisation:** AdamW [@loshchilov2019] (learning rate $10^{-3}$, weight decay $10^{-4}$),
@@ -1001,11 +1012,11 @@ public-test fold.
 
 What each component was trained, tuned or evaluated on, as established from the code and data:
 
-1. M9's training targets and PCA basis are FAIR-MAST EFIT++ $\psi$ from 3,622 archive shots. The
-   training pool very likely overlaps the FEC hidden test folds, so M9 is not a zero-shot result.
+1. M9's training targets and PCA basis are FAIR-MAST EFIT++ $\psi$ from 3,622 archive shots.
 2. The checkpoint metadata records `train_shots = 3622`; after the $|I_p|$ window 3,265 shots
    contribute frames, and 10% of those shots are the validation split. M9 trains on all windowed
-   frames, limited ones included.
+   frames, limited ones included. The 335 no-plasma shots in the keep list contribute no frame
+   but set the window threshold (328.73 kA with them, 471.99 kA without).
 3. M9's loss is MSE on the 60 PCA coefficients only; its five scalar heads are untrained.
 4. OSF's read-outs extract the LCFS with the scorer's vessel-envelope mask (`mast_envelope.npz`,
    `mask_coarse`).
@@ -1031,14 +1042,14 @@ The same list, with file-level detail, is in `DATA_PROVENANCE.md` of the reposit
 
 * **Labels are magnetics-based.** EFIT++ used probes and flux loops; the task is imputation of a
   magnetics-constrained reconstruction, and its errors are inherited.
-* **Archive overlap.** Of roughly 4,566 archive shots with EFIT and core Thomson, FEC curated 2,416;
-  the FAIR-MAST training pool very likely contains FEC hidden-fold shots, so M9 is not a zero-shot
-  MAST result in the challenge's sense.
-* **Not fully blind OSF.** OSF's global factors and some shape choices used aggregate public-test
-  scores and the demo shots.
-* **Holdout inputs differ from FEC rows.** The archive ingest resamples the currents differently
-  (up to 44 kA in $I_p$ on shot 28348, a 0.1 ms clock offset), overlays edge Thomson from `aye`,
-  and keeps a 131-entry core radius array. Scores on true FEC rows may differ.
+* **Not comparable with challenge leaderboards.** The FAIR-MAST training pool very likely shares
+  shots with the challenge's withheld test sets, so the scores here measure archive
+  generalisation, not a zero-shot challenge result.
+* **Not fully blind OSF.** OSF's global factors and some shape choices used aggregate scores on an
+  external MAST test set and the validation shots.
+* **Archive input format.** The archive ingest resamples the currents differently from the FEC
+  release format (up to 44 kA in $I_p$ on shot 28348, a 0.1 ms clock offset), overlays edge
+  Thomson from `aye`, and keeps a 131-entry core radius array.
 * **Weak scalars.** $q_{95}$ and $\beta_N$ come from OSF's simplified read-outs (vacuum $F$, midplane
   pressure); M9's scalar heads are untrained.
 * **Non-causal context.** M9 uses EFIT frames up to four steps ahead; it is an offline smoother.

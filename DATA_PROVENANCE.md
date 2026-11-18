@@ -87,6 +87,10 @@ Holdout processing vs. real FEC rows (limitations):
    overlaps the FEC hidden folds.
 3. Checkpoint metadata records `train_shots = 3622`; 3,265 shots contribute frames after the $|I_p|$
    window, and 10 % of those shots are validation.
+   Of the 357 keep-list shots without windowed frames, 335 are no-plasma shots (reduced `efm`
+   product: 200 fixed 5 ms slices, no scalars or X-points, max|Ip| ≤ 46.8 kA); they set the
+   2-means window threshold (328.73 kA with them, 471.99 kA without) but contribute no training
+   frame and no PCA frame. 14 of the sealed 80 are such shots.
 4. M9's loss is MSE on the 60 PCA coefficients only; the scalar heads are untrained.
 5. M9 trains on all $|I_p|$-windowed frames, limited ones included.
 6. OSF `_extract_lcfs` loads `mast_envelope.npz` `mask_coarse` (the scorer's LCFS extractor) for the

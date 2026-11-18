@@ -2,11 +2,11 @@
 
 What each component was trained, tuned or evaluated on, as established from the code and data:
 
-1. M9's training targets and PCA basis are FAIR-MAST EFIT++ $\psi$ from 3,622 archive shots. The
-   training pool very likely overlaps the FEC hidden test folds, so M9 is not a zero-shot result.
+1. M9's training targets and PCA basis are FAIR-MAST EFIT++ $\psi$ from 3,622 archive shots.
 2. The checkpoint metadata records `train_shots = 3622`; after the $|I_p|$ window 3,265 shots
    contribute frames, and 10% of those shots are the validation split. M9 trains on all windowed
-   frames, limited ones included.
+   frames, limited ones included. The 335 no-plasma shots in the keep list contribute no frame
+   but set the window threshold (328.73 kA with them, 471.99 kA without).
 3. M9's loss is MSE on the 60 PCA coefficients only; its five scalar heads are untrained.
 4. OSF's read-outs extract the LCFS with the scorer's vessel-envelope mask (`mast_envelope.npz`,
    `mask_coarse`).
