@@ -243,6 +243,23 @@ Why not the M9 training log's "sealed R² = 0.378"? That number is a pixel $R^2$
 Re-run: `python tests/parity_demo.py <ref_dir>`, `python tests/crosscheck_dump_gt.py …`,
 `tests/crosscheck_catskills_scorer.py` (needs the original repository).
 
+## Build the paper
+
+The paper is a tree of short Markdown notes under `paper/` (root `paper/MAST.md`; each bullet link is
+a child note, one link hop = one section level), readable on their own and compiled to LaTeX/PDF:
+
+```bash
+MPLCONFIGDIR=/tmp/mpl .venv/bin/python scripts/make_result_figures.py  # figures + tables from outputs/
+python3 scripts/compile_md_tree.py      # notes -> paper/arxiv.md -> paper/arxiv.tex -> paper/MAST.pdf
+bash scripts/build_paper_pdf.sh         # re-flatten and rebuild the PDF only
+```
+
+`compile_md_tree.py --md-only` / `--tex-only` stop early. Needs `pip install -e .[paper]`, pandoc,
+latexmk/pdflatex and Graphviz (`dot -Tpdf paper/figures/src/X.dot` re-renders a diagram). The build
+fails on any undefined citation or reference. Result tables in `paper/generated/` are written by
+`make_result_figures.py` from the saved `outputs/*.score.json`, so the paper never hand-copies a
+number.
+
 ## Repository layout
 
 ```

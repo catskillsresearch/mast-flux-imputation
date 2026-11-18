@@ -25,6 +25,11 @@ fetch = [
     "pandas>=2.1",
 ]
 
+paper = [
+    "matplotlib>=3.8",        # scripts/make_result_figures.py
+]
+# The paper build also needs pandoc, latexmk + pdflatex (TeX Live) and graphviz (dot).
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"

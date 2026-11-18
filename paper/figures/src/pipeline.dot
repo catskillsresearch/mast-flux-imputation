@@ -1,0 +1,36 @@
+digraph pipeline {
+  graph [rankdir=TB, fontname="Helvetica", fontsize=10, nodesep=0.25, ranksep=0.35, newrank=true];
+  node  [shape=box, style="rounded,filled", fillcolor="#f4f6fa", color="#4a5a78", fontname="Helvetica", fontsize=9];
+  edge  [color="#4a5a78", arrowsize=0.6, fontname="Helvetica", fontsize=8];
+
+  subgraph cluster_data { label="Data acquisition"; style="rounded,dashed"; color="#888888";
+    s3   [label="FAIR-MAST S3\nlevel1 Zarr: efm, amc, ayc, aye\n(CC BY-SA 4.0)"];
+    hf   [label="FEC (Hugging Face)\nmast_public_test, 1,206 shots\n(CC BY 4.0)"];
+    demo [label="FEC starter kit\n3 labelled demo shots\n28348 / 28350 / 28351"];
+  }
+  ingest [label="data/fair_mast/ingest.py\nmap to FEC parquet schema\n3,738 shots"];
+  labels [label="fetch_efit_labels.py\nq95, betaN, X-points, diverted flag,\nedge Thomson sidecars"];
+  split  [label="make_holdout.py\nsorted keys minus demo; Random(42) shuffle\nsealed 80 | pool 3,655", fillcolor="#fff3d6"];
+  qc     [label="QC (mast_qc_v1_index)\nkeep 3,622; quarantine 33"];
+  win    [label="|Ip| window: 2-means, seed 42\nIp >= 328.73 kA  (3,265 shots)"];
+  pca    [label="PCA basis of EFIT++ psi\nK = 60, randomized SVD"];
+  feat   [label="features x in R^308\ntemporal augmentation -> 924"];
+  train  [label="M9 training, 3 seeds {101, 202, 303}\nMSE on 60 coefficients, AdamW, 50 epochs\n10% shot validation split"];
+  w      [label="M9 checkpoints (*.pt)\nsha256-pinned", shape=cylinder];
+
+  spec   [label="OSF machine spec\ncoil table (812 rows), N_TF, sigma_ax = +1", fillcolor="#e8f3ea"];
+  cal    [label="OSF calibrated parameters (38)\ninspection of demo shots +\naggregate leaderboard probes", fillcolor="#e8f3ea"];
+  fin    [label="hybrid scalars c* = 1.062242,\ns* = 1.078508 (leaderboard probes)", fillcolor="#e8f3ea"];
+
+  pred   [label="pipeline/predict.py\n--mode osf | --mode hybrid\nFEC-format .npz", fillcolor="#fde9e7"];
+  score  [label="pipeline/score.py\nFEC v3.1.0 metric (S, R2, D_LCFS, Consistency)", fillcolor="#fde9e7"];
+  site   [label="app/fec_site\nper-frame / per-shot viewer", fillcolor="#fde9e7"];
+
+  s3 -> ingest -> split; s3 -> labels;
+  split -> qc [label="pool"]; qc -> win -> pca -> train; win -> feat -> train; train -> w;
+  split -> labels [label="sealed 80", style=dashed];
+  labels -> pred [label="holdout GT\n(diverted cut)", style=dashed];
+  spec -> cal -> pred; fin -> pred; w -> pred;
+  hf -> pred; demo -> pred; demo -> cal [style=dotted, label="inspected"];
+  pred -> score -> site; pred -> site;
+}

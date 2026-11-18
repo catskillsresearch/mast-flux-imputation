@@ -40,3 +40,14 @@ dist/
 .DS_Store
 .env
 data/fec/.hf_snapshot/
+
+# paper (LaTeX build products; arxiv.md / arxiv.tex / MAST.pdf are tracked)
+paper/arxiv.aux
+paper/arxiv.bbl
+paper/arxiv.blg
+paper/arxiv.fdb_latexmk
+paper/arxiv.fls
+paper/arxiv.out
+paper/arxiv.toc
+paper/arxiv.synctex.gz
+paper/arxiv.pdf
