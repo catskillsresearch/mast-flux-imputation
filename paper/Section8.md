@@ -10,3 +10,4 @@ make the same inspection systematic.
 - [Time-series checks](Section8/TimeSeries.md)
 - [Failure classes and ranked reports](Section8/Classes.md)
 - [Using the audit in training](Section8/Training.md)
+- [Planned end-to-end automated workflow](Section8/Workflow.md)

@@ -2,7 +2,7 @@
 
 The values are exactly those of catskills_fec ``osf/mast_12_osf_0_0_12.py``; this file only
 splits them into four groups so it is clear what is hardware, what is a numerical gate, what
-is an algorithm switch, and what was actually *calibrated*:
+is an algorithm switch, and what was *calibrated*:
 
 * ``MACHINE_SPEC``  -- fixed by MAST hardware / the FEC parquet schema (column names, TF turns,
   flux sign convention). Not tunable.

@@ -10,5 +10,5 @@
    disjointness proof, training, prediction, scoring and a browser viewer (Section 5).
 4. Measured results on a sealed 80-shot holdout, re-derived from the saved prediction files and
    cross-checked against an independent implementation of the scorer (Section 7).
-5. An honest provenance audit, listing where earlier documentation and the code disagree, and a
+5. A provenance audit, recording clarifications and updates to the earlier documentation, and a
    proposal for an automated failure-mode audit to sharpen training (Sections 8–9).

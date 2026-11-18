@@ -80,9 +80,9 @@ Holdout processing vs. real FEC rows (limitations):
   shots); the chord radius is the shot's own `aye` mean (FEC uses campaign tables);
 * core `thomson_core_R` keeps the ingest's 131-entry archive radius (FEC rows: 130 chord radii).
 
-## 6. Discrepancies between catskills_fec documentation and its code
+## 6. Clarifications to the catskills_fec documentation
 
-| # | documentation says | code / data shows |
+| # | earlier documentation | clarification from code / data |
 |---|---|---|
 | 1 | `PROVENANCE.md`: "FAIR-MAST EFIT++ / archive reconstructions: No"; "M9 trained without forbidden MAST equilibrium labels" | M9 targets and PCA basis are FAIR-MAST EFIT++ `psirz` from 3,622 archive shots. The training code's own note: "overlaps hidden test fold; not a zero-shot claim". |
 | 2 | "`mast_envelope.npz` as prior/mask: No" | OSF `_extract_lcfs` loads `mast_envelope.npz` `mask_coarse` (the scorer's LCFS extractor) for the $q_{95}$/$\beta_N$ read-outs. |

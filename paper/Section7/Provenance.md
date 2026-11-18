@@ -1,7 +1,7 @@
 # Provenance: documentation versus code
 
-Reading the source line by line found statements in the earlier documentation that the code does
-not support. The material ones are:
+Reading the source line by line led to the following clarifications and updates of the earlier
+documentation. The material ones are:
 
 1. *"No FAIR-MAST EFIT++ / archive reconstructions."* M9's targets and PCA basis are FAIR-MAST
    EFIT++ $\psi$ from 3,622 archive shots; the training code itself notes the pool overlaps the hidden

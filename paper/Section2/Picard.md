@@ -12,5 +12,5 @@ $\psi^{(0)}=\psi_{\rm vac}$, pass $n$:
 
 The loop stops when $\max|\psi^{(n)}-\psi^{(n-1)}|<10^{-4}$ Wb rad$^{-1}$ *and* the relative
 changes of $W$, $\Delta\psi$ and $s_V$ are all below $10^{-3}$, or after 20 passes. Earlier project
-documents called OSF "one-shot"; that is accurate only in the sense that nothing is fitted to
-measured flux — numerically it is an iteration of up to 20 linear solves per frame.
+documents describe OSF as "one-shot", in the sense that nothing is fitted to measured flux;
+numerically it is an iteration of up to 20 linear solves per frame.
