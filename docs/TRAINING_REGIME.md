@@ -171,3 +171,45 @@ Smoke run (Nov 18, 2026, 17:50 ET): `python -m models.m9.train --feature-cache <
 training (55 s wall including load, QC, window and PCA) with peak RSS 14.2 GB. Hence ≤ 12.5 min per
 50-epoch member. Run members sequentially, `OMP_NUM_THREADS=4`, audit with ≤ 8 workers and
 chunked shots; keep all outputs off the lab drive.
+
+## 9. Protocol for the E1–E5 run (fixed before any result)
+
+Code: `experiments/` (`prep`, `route_labels`, `m9x`, `osf_recal`, `evaluate`, `driver`), launched by
+`scripts/run_experiments.sh`; progress in `outputs/experiments/STATUS.json`, logs in
+`outputs/experiments/<stage>/`.
+
+* **Inputs.** The §4 input fixes need a re-ingest of the 3,738 archive shots from S3 and are not in
+  this round. Both arms read the same shipped feature cache, so they share inputs exactly; the
+  edge-Thomson columns are zeroed at inference as shipped.
+* **Data.** Shipped sealed-80 split; pool minus the no-plasma shots (`outputs/compat/no_plasma.json`);
+  QC recomputed; |Ip| window fixed at 328.7293519 kA; one PCA basis (K = 60, as shipped) shared by
+  every arm and member. Archive validation = first 10% of the contributing shots after
+  `random.Random(42).shuffle`; `archval100` and `select30` are its first 100 and 30 shots;
+  `osftrain200` = 200 training shots (`random.Random(43)`). Evaluation on archive shots uses the
+  FEC protocol cut (diverted EFIT frames, `pipeline.datasets.load_holdout`).
+* **Route score.** R = mean over {tip-gap rate, p95 and mean Hausdorff, relative area symmetric
+  difference, X-point and O-point offsets, topology-flip rate (+0.005)} of the ratio new/reference,
+  with the reference model audited on the same shots. R < 1 is better than the reference.
+* **E1 (arm A).** Coefficient MSE; per member the epoch with the lowest archive-validation
+  coefficient MSE; three members (101/202/303), 50 epochs. Scalars: E5 OSF maps.
+* **E2 (arm B, band + soft LCFS).** Sweep on member 101, 10 epochs, (w_b, w_a) ∈ {(1, 0), (3, 0),
+  (1, 3·10⁻³), (3, 10⁻²)}; pick the lowest R on `select30` (M9 ψ, reference shipped M9). Then three
+  members × 50 epochs; candidate states at epochs 19, 29, 39, 44, 49 and the best-MSE epoch; per
+  member the candidate with the lowest R on `select30`. Scalars: E5 OSF maps.
+* **E3 (+ scalar heads).** E2's weights plus w_s ∈ {3·10⁻⁴, 3·10⁻³} (Huber on standardised q95,
+  βN, R_axis, Z_axis, ℓi from EFIT++); pick the highest R²qb on `select30` among settings with R
+  within 5% of the lowest. Members and checkpoint rule as E2. Scalars: the network heads.
+* **E4 (+ critical points, temporal).** E3's weights plus (w_c, w_t) ∈ {(10⁻³, 1), (10⁻², 1)};
+  lowest R on `select30`. Members and checkpoint rule as E2. Scalars: the network heads.
+* **E5 (OSF read-out recalibration).** OSF solved on `osftrain200` (FEC protocol cut); affine maps
+  q95 ← clip(a_q q + b_q, 2, 25), βN ← clip(a_b β + b_b, 0.2, 5) fitted by Nelder–Mead (start: the
+  identity) to the EFIT++ labels of those frames. They replace c\*, s\*, which came from
+  leaderboard probes. The 38 solver parameters are not refitted in this round; the measured solve
+  time gives the cost of doing so.
+* **Acceptance tables.** For every experiment `pipeline.audit compare` against the shipped M9+OSF
+  hybrid (or shipped OSF for E5) on the three validation shots and on `archval100`.
+* **Final pick.** Among the E2–E4 ensembles, the lowest R on `archval100` (reference: shipped
+  hybrid on `archval100`); tie (equal to 4 decimals) broken by validation-shot S.
+* **Sealed holdout, once.** After the pick: E1, the final pick and E5 OSF mode, against the
+  shipped audits `holdout_hybrid_shipped` and `holdout_osf_shipped`. The thesis predicts the pick
+  ≥ E1 on holdout route metrics and S.

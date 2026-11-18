@@ -27,7 +27,8 @@ import numpy as np
 from models.io import cut_efit_frames, psi_stack, row_from_parquet
 from pipeline.paths import DATA, fair_mast_dir, fair_mast_labels_dir, fec_demo_dir, fec_public_test_dir
 
-SPLITS = ("demo", "holdout", "public_test")
+SPLITS = ("demo", "holdout", "public_test", "archval100", "select30", "osftrain200")
+EXP_SPLITS_JSON = DATA / "fair_mast" / "experiment_splits_seed42.json"
 INPUT_EFIT = ("efit_times", "efit_grid_R", "efit_grid_Z")
 HOLDOUT_JSON = DATA / "fair_mast" / "holdout_seed42.json"
 
@@ -63,6 +64,8 @@ def split_keys(split: str) -> list[str]:
         return sorted(p.stem for p in fec_demo_dir().glob("mast_shot_*.parquet"))
     if split == "holdout":
         return holdout_keys()
+    if split in ("archval100", "select30", "osftrain200"):
+        return list(json.loads(EXP_SPLITS_JSON.read_text())[split])
     if split == "public_test":
         return sorted(p.stem for p in fec_public_test_dir().glob("mast_shot_*.parquet"))
     raise ValueError(f"unknown split {split!r}; have {SPLITS}")
@@ -112,6 +115,8 @@ def load_public_test(key: str) -> Shot:
 
 
 def load_shot(split: str, key: str) -> Shot | None:
+    if split in ("archval100", "select30", "osftrain200"):  # FAIR-MAST archive shots, FEC protocol cut
+        return load_holdout(key)
     return {"demo": load_demo, "holdout": load_holdout, "public_test": load_public_test}[split](key)
 
 

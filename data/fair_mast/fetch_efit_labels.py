@@ -42,7 +42,8 @@ from pipeline.paths import assert_not_on_lab, fair_mast_labels_dir  # noqa: E402
 ENDPOINT = "https://s3.echo.stfc.ac.uk"
 BUCKET = "mast/level1/shots"
 MS = 1000.0
-VARS = ("q_95", "betan", "xpoint1_rc", "xpoint1_zc", "xpoint2_rc", "xpoint2_zc")
+VARS = ("q_95", "betan", "xpoint1_rc", "xpoint1_zc", "xpoint2_rc", "xpoint2_zc", "li", "magnetic_axis_r",
+        "magnetic_axis_z")
 
 
 def fetch_one(fs, shot: int) -> dict:
