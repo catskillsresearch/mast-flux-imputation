@@ -63,20 +63,19 @@ def main() -> int:
     GEN.mkdir(parents=True, exist_ok=True)
     ex = [E for E in ("E1", "E2", "E3", "E4") if (EXP / E / "result.json").is_file()]
     names = {"E1": "E1", "E2": "E2", "E3": "E3", "E4": "E4"}
-    for split, old in (("demo", "demo_hybrid_shipped"), ("archval100", "exp_archval100_hybrid_shipped")):
-        rows = [("shipped", old)] + [(names[E], f"exp_{E}_{split}_hybrid") for E in ex]
-        (GEN / f"exp_{split}.md").write_text(table(rows, summ(old)))
-    rows = [("shipped OSF", "demo_osf_shipped"), ("OSF + E5 maps", "exp_E5_demo_osf"),
-            ("shipped OSF, archval100", "exp_archval100_osf_shipped"), ("OSF + E5 maps, archval100", "exp_E5_archval100_osf")]
+    for split in ("demo", "archval100"):
+        rows = [(names[E], f"exp_{E}_{split}_hybrid") for E in ex]
+        (GEN / f"exp_{split}.md").write_text(table(rows, summ(f"exp_E1_{split}_hybrid")))
+    rows = [("OSF + E5 maps, validation shots", "exp_E5_demo_osf"), ("OSF + E5 maps, archval100", "exp_E5_archval100_osf")]
     out = ["| run | $S$ | $R^2_{q_{95}}$ | $R^2_{\\beta_N}$ | mean $\\lvert\\Delta q_{95}\\rvert$ | mean $\\lvert\\Delta\\beta_N\\rvert$ |",
            "|---|---|---|---|---|---|"]
-    for lab, tag in rows + [("shipped OSF, holdout", "holdout_osf_shipped"), ("OSF + E5 maps, holdout", "exp_E5_holdout_osf")]:
+    for lab, tag in rows + [("OSF + E5 maps, holdout", "exp_E5_holdout_osf")]:
         s = summ(tag)
         if s:
             out.append(f"| {lab} | {s['S']:.4f} | {s['R2_q95']:.4f} | {s['R2_betaN']:.4f} | {s['mae_q95']:.4f} | {s['mae_betaN']:.4f} |")
     (GEN / "exp_e5.md").write_text("\n".join(out) + "\n")
     # sweeps
-    out = ["| stage | weights | $\\mathcal R$ (select30) | $R^2_\\psi$ | $R^2_{qb}$ | chosen |", "|---|---|---|---|---|---|"]
+    out = ["| stage | weights | $R^2_\\psi$ | $R^2_{qb}$ | chosen |", "|---|---|---|---|---|"]
     for E in ("E2", "E3", "E4"):
         p = EXP / E / "sweep_choice.json"
         if not p.is_file():
@@ -84,31 +83,26 @@ def main() -> int:
         d = rj(p)
         for r in d["rows"]:
             w = "(" + ", ".join(f"{v:g}" for v in r["w"].values()) + ")"
-            out.append(f"| {E} | {w} | {r['R']:.4f} | {r['R2_psi']:.6f} | {r['R2_qb']:.6f} | {'yes' if r['i'] == d['pick'] else ''} |")
+            out.append(f"| {E} | {w} | {r['R2_psi']:.6f} | {r['R2_qb']:.6f} | {'yes' if r['i'] == d['pick'] else ''} |")
     (GEN / "exp_sweeps.md").write_text("\n".join(out) + "\n")
     # members
-    out = ["| stage | seed | chosen state | $\\mathcal R$ (select30) | best-MSE epoch |", "|---|---|---|---|---|"]
+    out = ["| stage | seed | chosen state | best-MSE epoch |", "|---|---|---|---|"]
     for E in ("E1", "E2", "E3", "E4"):
         p = EXP / E / "members.json"
         if not p.is_file():
             continue
         for s in rj(p)["selection"]:
-            rr = {r["label"]: r["R"] for r in s.get("rows", [])}
             ep = s.get("best_mse_epoch", s.get("epoch"))
-            out.append(f"| {E} | {s['seed']} | {s['pick']} | {fmt(rr.get(s['pick']), 'r')} | {ep} |")
+            out.append(f"| {E} | {s['seed']} | {s['pick']} | {ep} |")
     (GEN / "exp_members.md").write_text("\n".join(out) + "\n")
-    # diagnostic: experiment psi with the shipped OSF scalar read-out (scripts/demo_same_scalars.py)
-    rows = [("shipped", "demo_hybrid_shipped")] + [(names[E] + ", $c^*$, $s^*$", f"exp_{E}_demo_psi_shipscal")
-                                                           for E in ex]
-    (GEN / "exp_demo_shipscal.md").write_text(table(rows, summ("demo_hybrid_shipped")))
     # holdout
     hp = EXP / "holdout" / "result.json"
     if hp.is_file():
         pick = rj(hp)["pick"]
-        rows = [("shipped", "holdout_hybrid_shipped"), (names["E1"], "exp_E1_holdout_hybrid")]
+        rows = [(names["E1"], "exp_E1_holdout_hybrid")]
         if pick != "E1":
             rows.append((names[pick] + " (pick)", f"exp_{pick}_holdout_hybrid"))
-        (GEN / "exp_holdout.md").write_text(table(rows, summ("holdout_hybrid_shipped")))
+        (GEN / "exp_holdout.md").write_text(table(rows, summ("exp_E1_holdout_hybrid")))
     print("wrote", *(p.name for p in sorted(GEN.glob("exp_*"))))
     return 0
 

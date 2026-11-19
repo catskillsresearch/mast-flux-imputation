@@ -10,11 +10,13 @@ python data/fair_mast/fetch_efit_labels.py \
     --keys-json data/fair_mast/holdout_seed42.json
 python -m models.m9.train --build-cache
 python -m models.m9.train --member all
+bash scripts/run_experiments.sh          # E1-E5 (Section 10.6)
+bash scripts/run_e6.sh                   # E6 curve-distance run
 python -m pipeline.predict --split holdout --mode osf
 python -m pipeline.predict --split holdout --mode hybrid
 python -m pipeline.score outputs/holdout_hybrid.npz
 python -m pipeline.audit outputs/holdout_hybrid.npz \
-    --tag holdout_hybrid_shipped          # route quantities
+    --tag holdout_hybrid          # route quantities
 python -m app.fec_site --port 8770
 ```
 

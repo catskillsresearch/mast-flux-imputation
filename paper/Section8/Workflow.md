@@ -13,7 +13,7 @@ models from public data with no manual intervention:
 3. **QC and split.** The quality fence, the $|I_p|$ window and the sealed holdout, all
    recomputed with recorded seeds; the disjointness checks run and fail the workflow if violated.
 4. **Calibrate OSF** from scratch: the calibrated parameter group (Section 3.9) fitted by an explicit
-   optimiser on training shots only, replacing hand-set values and leaderboard probes.
+   optimiser on training shots only, replacing the hand-set values.
 5. **Train M9** from scratch: PCA basis, network and ensemble members.
 6. **Validate and gate.** Validation on the three FEC demo shots — provided the compatibility
    conditions below are met — together with the archive validation split, and the failure-mode audit
@@ -35,5 +35,5 @@ series, which changes $I_p$ by up to 63 kA in fast transients but not at the EFI
 core chord-radius table (131 versus 130 entries), and in the ingest carrying all EFIT slices but no
 scalar labels. With edge Thomson and the clocks harmonised, the demo shots are compatible as a
 validation set. They remain a very small one (three consecutive shots, 115 frames) and were already
-used for OSF tuning and the M9 acceptance threshold, so they should complement, not replace, a larger
+used for OSF tuning, so they should complement, not replace, a larger
 archive validation split, and they cannot be reported as held-out results.

@@ -9,17 +9,18 @@ and we formalise a two-part objective: the *target* is the challenge score; the 
 observable distances computed frame by frame. The setting is the reconstruction of MAST poloidal
 flux $\psi(R,Z)$ on a $65\times65$ grid, with $q_{95}$ and $\beta_N$, from poloidal-field coil
 currents, plasma current, toroidal-field current and midplane Thomson scattering, with no magnetic
-probe or flux-loop input. Two models minimise different parts of the objective: OSF, a
-free-boundary Grad–Shafranov forward solver over the 812-element MAST coil set, and M9, a PCA-basis
-neural surrogate trained with coefficient MSE on 3,622 FAIR-MAST archive
-shots. On a sealed, seed-42 FAIR-MAST holdout disjoint from M9 training (65 shots, 3,449 diverted
-frames), OSF reaches $S=0.618634$ and the hybrid M9 + OSF $S=0.862677$ with
-$R^2_\psi=0.997771$. Yet the same hybrid has a top or bottom boundary-tip gap of at least 50 mm in
-24.2% of frames, $R^2=0.577001$ for lower triangularity and $R^2=0.342298$ for $q_{95}$; between
-the three validation shots used for model selection and the holdout its flux score barely moves
-while its boundary and $q_{95}$ errors grow. An automated observable audit measures the route for every frame, and a FAIR-MAST-only
-training regime compares MSE-only and observable-guided training on the same data and holdout.
-Adding the scalar observables to training raises holdout $S$ from 0.874196 (MSE only) to
-0.931421, above the shipped hybrid, with no use of challenge labels or leaderboard probes; the
+probe or flux-loop input. The model is a hybrid of M9, a PCA-basis neural surrogate trained on
+FAIR-MAST EFIT++ flux, and OSF, a free-boundary Grad–Shafranov forward solver over the 812-element
+MAST coil set. Trained with coefficient MSE alone on FAIR-MAST (3,258 shots, 10% of them for validation), the
+hybrid reaches
+$S=0.874196$ and $R^2_\psi=0.997808$ on a sealed, seed-42 FAIR-MAST holdout disjoint from training
+(65 shots, 3,449 diverted frames). Yet it has a top or bottom boundary-tip gap of at least 50 mm in
+24.9% of frames, $R^2=0.697184$ for lower triangularity and $R^2=0.444019$ for $q_{95}$, and
+between the three validation shots and the holdout its X-point offset, p95 boundary distance and
+$q_{95}$ error grow while its score rises. An automated observable audit measures the route for
+every frame, and a FAIR-MAST-only training regime compares MSE-only and observable-guided training
+on the same data and holdout. Adding the scalar observables to training raises holdout $S$ from
+0.874196 to 0.931421 with no use of challenge labels, and training on per-shot curve distances of
+the scalar time series raises it to 0.934444, with lower-triangularity $R^2$ 0.761293; the
 geometric route terms tried (boundary band, soft LCFS, critical points) do not improve the
 boundary beyond coefficient MSE.

@@ -8,5 +8,4 @@ $$
 $$
 
 Each checkpoint stores its own $\mu$, $C$ and feature statistics, so the average is taken in
-$\psi$-space. The ported inference reproduces the original ensemble output with maximum absolute difference 0 on the three
-demo shots.
+$\psi$-space.

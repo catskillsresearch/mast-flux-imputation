@@ -3,19 +3,21 @@
 Reconstruct the poloidal flux $\psi(R,Z)$ of MAST plasmas, together with $q_{95}$ and $\beta_N$, on
 the 65 × 65 Fusion Equilibrium Challenge (FEC) grid ($R\in[0.06,2.00]$ m, $Z\in[-2,2]$ m), **from
 coil currents, plasma current, the toroidal-field current and Thomson scattering only**. No magnetic
-probe ($B_\theta$ pick-up coil) or flux-loop signal is an input to either model. (The EFIT++
+probe ($B_\theta$ pick-up coil) or flux-loop signal is an input to the model. (The EFIT++
 reconstructions used as ground truth *were* computed with those sensors; see
 [DATA_PROVENANCE.md](DATA_PROVENANCE.md).)
 
-Two models are provided:
+The model is a hybrid of two components:
 
-| model | $\psi(R,Z)$ | $q_{95}$, $\beta_N$ | data-driven? |
+| component | $\psi(R,Z)$ | $q_{95}$, $\beta_N$ | data-driven? |
 |---|---|---|---|
-| **OSF** (`mast_12_osf_0.0.12`) | free-boundary Grad–Shafranov forward solve | flux-surface read-out of the OSF map + Thomson pressure | 38 hand-calibrated physics parameters |
-| **M9 + OSF** (hybrid, shipped Phase-2 Final recipe) | 3-member M9 ensemble (PCA-60 + dual-context residual MLP, trained on FAIR-MAST EFIT++) | OSF read-outs × post-hoc factors | yes (M9 weights) |
+| **OSF** (`mast_12_osf_0.0.12`) | free-boundary Grad–Shafranov forward solve | flux-surface read-out of the OSF map + Thomson pressure, through affine maps fitted on FAIR-MAST (E5) | 38 hand-calibrated physics parameters |
+| **M9** | ensemble of PCA-60 + dual-context residual MLP members, trained on FAIR-MAST EFIT++ | network scalar heads (from E3 on) | yes |
 
-Everything here was extracted from the Catskills Research FEC competition repository and re-verified
-bit-for-bit (see [Verification](#9-verification)). Mathematical detail: [docs/MODEL.md](docs/MODEL.md).
+In the MSE-only form (E1) the flux comes from M9 and $q_{95}$, $\beta_N$ from OSF; from E3 on the
+M9 scalar heads supply $q_{95}$ and $\beta_N$ as well (§1.3). Mathematical detail:
+[docs/MODEL.md](docs/MODEL.md); training regime and experiments:
+[docs/TRAINING_REGIME.md](docs/TRAINING_REGIME.md).
 
 ---
 
@@ -86,17 +88,19 @@ $$
 
 $x_t\in\mathbb R^{308}$: 13 coil currents + $I_p$ interpolated to the EFIT time (14), 131 core-Thomson
 $T_e$ and 131 $n_e$ channels interpolated in time (262), and 16 + 16 edge-Thomson channels (32,
-zeroed at inference by the shipped recipe). $A$ appends a
+zeroed in training and inference). $A$ appends a
 centred 9-frame moving average and its smoothed central difference ($\to924$ features). $f_s$ is a
 dual-context residual MLP (present-frame stem 308→512 + 4 residual blocks; context stem 616→512 + 3
-blocks, zero-initialised gate). Trained with MSE on PCA coefficients on 3,622 QC-passed FAIR-MAST
-shots (frames with $|I_p|\ge 328.73$ kA). Details: [models/m9/README.md](models/m9/README.md).
+blocks, zero-initialised gate). The base recipe trains with MSE on PCA coefficients on the QC-passed
+FAIR-MAST pool (3,258 shots with frames at $|I_p|\ge 328.73$ kA, 211,534 frames, 10% of the shots
+for validation). Details: [models/m9/README.md](models/m9/README.md).
 
-### 1.3 Hybrid (shipped recipe)
+### 1.3 Hybrid M9 + OSF
 
-$\psi$ = M9 ensemble mean; $q_{95}=\mathrm{clip}(q_{95}^{\rm OSF}\cdot1.062242/1.20,\,2,\,25)$,
-$\beta_N=\mathrm{clip}(\beta_N^{\rm OSF}\cdot1.078508,\,0.2,\,5)$. The two factors were obtained from
-Codabench leaderboard probes on the FEC public-test fold (see DATA_PROVENANCE.md).
+$\psi$ = M9 ensemble mean. MSE-only form (E1, E2): $q_{95}=\mathrm{clip}(0.626\,q_{95}^{\rm OSF}+1.957,\,2,\,25)$,
+$\beta_N=\mathrm{clip}(1.013\,\beta_N^{\rm OSF}+0.093,\,0.2,\,5)$, maps fitted by Nelder–Mead to
+FAIR-MAST EFIT++ labels on 200 training shots (E5). From E3 on, $q_{95}$ and $\beta_N$ come from the
+M9 scalar heads trained on EFIT++ labels, and OSF is not evaluated at inference.
 
 ---
 
@@ -120,7 +124,7 @@ slices only; the archive keeps all slices.
 
 ```bash
 uv venv .venv && uv pip install -e ".[fetch]"     # torch: add --index-url for your CUDA build
-python data/fec/fetch.py --demo                   # 3 labelled demo shots (sha256-checked)
+python data/fec/fetch.py --demo                   # 3 labelled demo shots (checksum-verified)
 python data/fec/fetch.py --public-test            # 1,206 public-test shots (~GB)
 python data/fair_mast/ingest.py --pool data/fair_mast/mast_pool3.txt --shots 5000   # archive -> FEC schema
 python data/fair_mast/make_holdout.py             # sealed-80 list + disjointness proof
@@ -129,32 +133,34 @@ python data/fair_mast/fetch_efit_labels.py --keys-json data/fair_mast/holdout_se
 
 Or point at existing copies: `FEC_MAST_DIR`, `FEC_DEMO_DIR`, `FAIR_MAST_DIR`, `FAIR_MAST_LABELS_DIR`,
 `M9_WEIGHTS_DIR`, or a lab root `CATSKILLS_FUSION_LAB` (see `pipeline/paths.py`). All data,
-labels, caches, weights and outputs are git-ignored. The M9 checkpoints (3 × ~10 MB, sha256 in
-`models/m9/predict.py`) are not in git; place them in `models/m9/weights/`.
+labels, caches, weights and outputs are git-ignored. M9 checkpoints (`*.pt`) are not in git; the
+experiment runs write theirs under `outputs/experiments/`.
 
 ## 4. Calibrating
 
 * **OSF** has no training step. Its parameters live in `models/osf/calibration.py`, split into
   `MACHINE_SPEC` (hardware/schema), `GRID_GATES` (search boxes), `SWITCHES` (code path) and the 38
-  `CALIBRATED` physics parameters, plus `FINAL_SCALARS` (the two post-hoc hybrid factors).
-* **M9** re-training (recipe identical to the shipped members; reproduces the 3,622-shot QC keep
-  list and $I_p^{\rm lo}=328.7293519015368$ kA exactly):
+  `CALIBRATED` physics parameters. Its $q_{95}$/$\beta_N$ read-out maps are fitted by E5.
+* **M9** base recipe:
 
 ```bash
 python -m models.m9.train --build-cache          # features from FAIR_MAST_DIR -> data/fair_mast/cache
 python -m models.m9.train --member all           # 3 x 50 epochs -> models/m9/weights/
+bash scripts/run_experiments.sh                  # E1-E5, resumable (§8.1)
+bash scripts/run_e6.sh                           # E6 curve-distance run, resumable
 ```
 
 ## 5. Applying (CLI)
 
 ```bash
-python -m pipeline.predict --split holdout --mode osf       # outputs/holdout_osf.npz (+ .json)
-python -m pipeline.predict --split holdout --mode hybrid    # outputs/holdout_hybrid.npz
-python -m pipeline.predict --split public_test --mode hybrid --workers 14
-python -m pipeline.score outputs/holdout_hybrid.npz         # table + outputs/holdout_hybrid.score.json
+python -m pipeline.predict --split holdout --mode osf       # OSF alone: outputs/holdout_osf.npz (+ .json)
+python -m pipeline.score outputs/holdout_osf.npz            # table + outputs/holdout_osf.score.json
+python -m experiments.driver --stage holdout                # E1 / pick ensembles: predict + audit
+python -m experiments.driver_e6 --stage final               # E6 ensemble: predict + audit
+python scripts/make_compare_preds.py demo                   # viewer predictions for the E6 column
 ```
 
-`--split {demo,holdout,public_test}`. Output npz keys follow the FEC submission format:
+`--split {demo,holdout,public_test}`. Output npz keys follow the FEC prediction format:
 `shot_XXXX_psirz` (T,65,65), `shot_XXXX_q95` (T,), `shot_XXXX_betaN` (T,), XXXX = index in the
 split order recorded in the `.json` sidecar. Models only ever see `inputs_only(row)` (all `efit_*`
 label columns removed).
@@ -165,7 +171,7 @@ label columns removed).
 python -m app.fec_site --port 8770      # http://127.0.0.1:8770/
 ```
 
-MAST-only: per split, fold scorecards and a per-shot table; per shot, EFIT++ vs OSF vs M9 + OSF
+MAST-only: per split, fold scorecards and a per-shot table; per shot, EFIT++ vs the models
 $\psi$ contours with LCFS, O-point, X-points (saddle finder; efm X-points on the holdout), equal-$T_e$
 chord pairs, residual maps, $\psi$/$q_{95}$/$\beta_N$ error histograms, $q_{95}$/$\beta_N$/per-frame
 $R^2_\psi$ traces, a time scrubber and per-frame scorecards.
@@ -199,75 +205,56 @@ protocol: EFIT clock restricted to diverted slices (any finite efm X-point — r
 selection on all 3 demo shots), magnetics/Thomson clocks whole, GT $\psi$ = EFIT++ `psirz`, GT
 $q_{95},\beta_N$ = efm `q_95`, `betan`; edge Thomson overlaid from `aye` where the ingest lacked it
 (60 of 65 shots). **15 of the 80 shots have no diverted slice and are excluded → 65 shots, 3,449
-frames** (of 5,280 EFIT slices). Disjoint from all M9 training: the 3,622-shot training list
-∩ sealed = ∅ (proof in `make_holdout.py`; checkpoints record `seed=42`, `train_shots=3622`).
-OSF caveat: its parameters were not fitted to these shots' labels, but its global $q_{95}/\beta_N$
-factors were tuned on public-test leaderboard probes, and that fold may overlap the archive.
+frames** (of 5,280 EFIT slices). Disjoint from all M9 training and validation (proof in
+`make_holdout.py`). OSF caveat: its parameters were not fitted to these shots' labels, but some
+hand-set values used aggregate public-test scores, and that fold may overlap the archive.
 
-Measured on 2026-11-18 (seed 42, 65 shots, 3,449 frames, scorer v3.1.0, $s=+1$, 0 LCFS failures):
+Training regime, protocol and all experiment tables: [docs/TRAINING_REGIME.md](docs/TRAINING_REGIME.md);
+outputs in `outputs/experiments/`. E1 = coefficient MSE only (scalars from OSF through the E5 maps);
+E4 = + boundary band, scalar heads, critical-point and temporal terms (pick of E1–E5); E6 = + per-shot
+curve distances of the scalar time series, late-shot and triangularity weighting (current
+calibration). Nothing uses FEC labels.
 
-| sealed-80 holdout (65 shots, 3,449 frames) | **S** | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency |
-|---|---|---|---|---|---|---|
-| OSF | **0.618634** | 0.917210 | 0.164457 | 0.379077 | 0.734036 | 0.000000 |
-| M9 + OSF | **0.862677** | 0.997771 | 0.342298 | 0.394260 | 0.945207 | 0.820703 |
+| sealed-80 holdout, scored once | **S** | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency | tip gap ≥ 50 mm | p95 Hausdorff (mm) | X-point offset (mm) |
+|---|---|---|---|---|---|---|---|---|---|
+| OSF + E5 maps | **0.640558** | 0.917210 | 0.444019 | 0.391840 | 0.734036 | 0.000000 | 90.5% | 585.7 | 109.9 |
+| M9 + OSF, MSE only (E1) | **0.874196** | 0.997808 | 0.444019 | 0.391840 | 0.944528 | 0.841297 | 24.9% | 104.2 | 20.5 |
+| E4 | **0.931421** | 0.997837 | 0.916470 | 0.689018 | 0.945939 | 0.838024 | 23.1% | 97.9 | 22.0 |
+| E6 | **0.934444** | 0.997832 | 0.913296 | 0.677889 | 0.938632 | 0.862171 | 32.4% | 102.3 | 34.3 |
 
-Consistency components (unclipped pooled $R^2$; the term averages $\max(0,\cdot)$):
+Consistency components on the holdout (pooled $R^2$):
 
 | sealed-80 holdout | R²(R_axis) | R²(Z_axis) | R²(κ) | R²(δ_top) | R²(δ_bot) | R²(V) | R²(ℓ_i) |
 |---|---|---|---|---|---|---|---|
-| OSF | −0.492257 | −0.137536 | −0.069541 | −0.502441 | −0.169103 | −2.645417 | −0.278707 |
-| M9 + OSF | 0.889709 | 0.904550 | 0.893904 | 0.906330 | 0.577001 | 0.904904 | 0.668520 |
+| OSF + E5 maps | −0.492257 | −0.137536 | −0.069541 | −0.502441 | −0.169103 | −2.645417 | −0.278707 |
+| E1 | 0.892622 | 0.921938 | 0.899906 | 0.898269 | 0.697184 | 0.914924 | 0.664240 |
+| E4 | 0.891041 | 0.867777 | 0.903901 | 0.899385 | 0.684079 | 0.919919 | 0.700065 |
+| E6 | 0.903677 | 0.961958 | 0.900994 | 0.912428 | 0.761293 | 0.920641 | 0.674204 |
 
-For reference only — the 3 FEC demo shots (115 frames) were used in the OSF calibration, so they
-are not held out for OSF:
+The three FEC validation shots (115 frames), held out from training and selection, scored once:
 
-| FEC demo (3 shots, 115 frames) | S | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency |
+| FEC validation shots | S | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency |
 |---|---|---|---|---|---|---|
-| OSF | 0.774217 | 0.982004 | 0.841487 | 0.689767 | 0.876086 | 0.158309 |
-| M9 + OSF | 0.871921 | 0.998555 | 0.818390 | 0.594122 | 0.955503 | 0.606137 |
+| E1 | 0.863300 | 0.998826 | 0.635596 | 0.576591 | 0.949921 | 0.640195 |
+| E4 | 0.867116 | 0.998764 | 0.975269 | 0.417430 | 0.952618 | 0.590407 |
+| E6 | 0.899567 | 0.998879 | 0.976192 | 0.663239 | 0.953087 | 0.659589 |
 
-Pooled over **all** 8,161 EFIT slices of the 80 sealed shots (ramps and limited phases, plus the
-QC-quarantined outlier shot 27373), the shipped ensemble has a pixel $R^2$ of 0.378687 (0.733818
-without 27373); the difference from 0.997771 is the frame population.
-
-### 8.1 FAIR-MAST-only retraining (E1–E5)
-
-Protocol fixed in advance in `docs/TRAINING_REGIME.md` §9; run with `bash scripts/run_experiments.sh`
-(about 2.5 h on one RTX 5060 Ti); outputs in `outputs/experiments/`, paper Section 10.6. E1 = shipped
-recipe (coefficient MSE) on the cleaned pool; E2 = + boundary band; E3 = + scalar heads on EFIT++
-q95, βN, axis, ℓi; E4 = + critical-point and temporal terms (final pick, lowest route score on the
-archive validation split); E5 = OSF q95/βN read-out maps fitted to EFIT++ on 200 training shots
-(replacing c\*, s\*). Nothing in E1–E5 uses FEC labels or leaderboard probes.
-
-| sealed-80 holdout, scored once | **S** | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency | tip gap ≥ 50 mm | p95 Hausdorff (mm) |
-|---|---|---|---|---|---|---|---|---|
-| shipped M9 + OSF | **0.862677** | 0.997771 | 0.342298 | 0.394260 | 0.945207 | 0.820703 | 24.2% | 108.6 |
-| E1 (MSE only) | **0.874196** | 0.997808 | 0.444019 | 0.391840 | 0.944528 | 0.841297 | 24.9% | 104.2 |
-| E4 (route-guided, pick) | **0.931421** | 0.997837 | 0.916470 | 0.689018 | 0.945939 | 0.838024 | 23.1% | 97.9 |
-| shipped OSF | **0.618634** | 0.917210 | 0.164457 | 0.379077 | 0.734036 | 0.000000 | 90.5% | 585.7 |
-| OSF + E5 maps | **0.640558** | 0.917210 | 0.444019 | 0.391840 | 0.734036 | 0.000000 | 90.5% | 585.7 |
-
-| FEC demo (3 shots, 115 frames) | **S** | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency | tip gap ≥ 50 mm | p95 Hausdorff (mm) |
-|---|---|---|---|---|---|---|---|---|
-| shipped M9 + OSF | **0.871921** | 0.998555 | 0.818390 | 0.594122 | 0.955503 | 0.606137 | 20.0% | 64.8 |
-| E1 (MSE only) | **0.863300** | 0.998826 | 0.635596 | 0.576591 | 0.949921 | 0.640195 | 31.3% | 87.5 |
-| E4 (route-guided, pick) | **0.867116** | 0.998764 | 0.975269 | 0.417430 | 0.952618 | 0.590407 | 22.6% | 80.6 |
-
-E4 beats the shipped hybrid on the holdout and is slightly below it on the three demo shots, where
-the shipped scalar read-out was tuned. The gain over E1 comes from the trained scalar heads; the
-geometric route terms did not improve the boundary beyond MSE (route score E4 0.9906 vs E1 0.9742
-relative to shipped on the holdout). Tables: `python scripts/make_experiment_tables.py`.
+E6 has the highest score on both sets. Its gain over E4 is in Consistency (lower triangularity,
+$Z_{\rm axis}$); it has more boundary-tip gaps and larger X-point offsets than E1 and E4. Tables:
+`python scripts/make_results_tables.py`, `python scripts/make_experiment_tables.py`,
+`python scripts/make_e6_report.py`.
 
 ## 9. Verification
 
 | check | result |
 |---|---|
-| `pipeline.score` vs catskills_fec `mast_eval.score_holdout` on the same predictions | all 19 result fields identical (holdout osf/hybrid, demo osf/hybrid) |
-| `models.m9.train` split / QC / window | QC keep == shipped 3,622 list; ip_lo == 328.7293519015368 |
+| `pipeline.score` vs an independent implementation of the scorer reduction, same predictions | all 19 result fields identical on the four runs checked |
+| `pipeline.audit` S vs `pipeline.score` S | identical on every audited run |
+| sealed split recomputed (`make_holdout.py`) | all disjointness checks true |
 | viewer | all routes 200, unknown routes 404 |
 
 Re-run: `python tests/crosscheck_dump_gt.py …`, then `tests/crosscheck_catskills_scorer.py` (needs the
-source repository).
+second implementation).
 
 ## Build the paper
 
@@ -275,8 +262,10 @@ The paper is a tree of short Markdown notes under `paper/` (root `paper/MAST.md`
 a child note, one link hop = one section level), readable on their own and compiled to LaTeX/PDF:
 
 ```bash
-MPLCONFIGDIR=/tmp/mpl .venv/bin/python scripts/make_result_figures.py  # figures + tables from outputs/
-.venv/bin/python scripts/make_audit_tables.py      # audit tables from outputs/audit/*_shipped
+.venv/bin/python scripts/make_audit_tables.py      # Objective tables (E1, OSF + E5 maps)
+.venv/bin/python scripts/make_experiment_tables.py # experiment tables (R relative to E1)
+.venv/bin/python scripts/make_results_tables.py    # Section 6 holdout tables
+MPLCONFIGDIR=/tmp/mpl .venv/bin/python scripts/make_e6_report.py  # E6 tables and figures
 python3 scripts/compile_md_tree.py      # notes -> paper/arxiv.md -> paper/arxiv.tex -> paper/MAST.pdf
 bash scripts/build_paper_pdf.sh         # re-flatten and rebuild the PDF only
 ```
@@ -284,9 +273,8 @@ bash scripts/build_paper_pdf.sh         # re-flatten and rebuild the PDF only
 `compile_md_tree.py --md-only` / `--tex-only` stop early. Needs `pip install -e .[paper]`, pandoc,
 latexmk/pdflatex and Graphviz (`dot -Tpdf paper/figures/src/X.dot` re-renders a diagram). The build
 fails on any undefined citation or reference. Result tables in `paper/generated/` are written by
-`make_result_figures.py` and `make_audit_tables.py` from the saved `outputs/*.score.json` and
-`outputs/audit/*/summary.json`, so the paper never hand-copies a
-number.
+these scripts from the saved `outputs/audit/*/summary.json` and `outputs/experiments/` files, so the
+paper never hand-copies a number.
 
 ## Repository layout
 

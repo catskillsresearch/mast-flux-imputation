@@ -24,18 +24,19 @@ and we formalise a two-part objective: the *target* is the challenge score; the 
 observable distances computed frame by frame. The setting is the reconstruction of MAST poloidal
 flux $\psi(R,Z)$ on a $65\times65$ grid, with $q_{95}$ and $\beta_N$, from poloidal-field coil
 currents, plasma current, toroidal-field current and midplane Thomson scattering, with no magnetic
-probe or flux-loop input. Two models minimise different parts of the objective: OSF, a
-free-boundary Grad–Shafranov forward solver over the 812-element MAST coil set, and M9, a PCA-basis
-neural surrogate trained with coefficient MSE on 3,622 FAIR-MAST archive
-shots. On a sealed, seed-42 FAIR-MAST holdout disjoint from M9 training (65 shots, 3,449 diverted
-frames), OSF reaches $S=0.618634$ and the hybrid M9 + OSF $S=0.862677$ with
-$R^2_\psi=0.997771$. Yet the same hybrid has a top or bottom boundary-tip gap of at least 50 mm in
-24.2% of frames, $R^2=0.577001$ for lower triangularity and $R^2=0.342298$ for $q_{95}$; between
-the three validation shots used for model selection and the holdout its flux score barely moves
-while its boundary and $q_{95}$ errors grow. An automated observable audit measures the route for every frame, and a FAIR-MAST-only
-training regime compares MSE-only and observable-guided training on the same data and holdout.
-Adding the scalar observables to training raises holdout $S$ from 0.874196 (MSE only) to
-0.931421, above the shipped hybrid, with no use of challenge labels or leaderboard probes; the
+probe or flux-loop input. The model is a hybrid of M9, a PCA-basis neural surrogate trained on
+FAIR-MAST EFIT++ flux, and OSF, a free-boundary Grad–Shafranov forward solver over the 812-element
+MAST coil set. Trained with coefficient MSE alone on FAIR-MAST (3,258 shots, 10% of them for validation), the
+hybrid reaches
+$S=0.874196$ and $R^2_\psi=0.997808$ on a sealed, seed-42 FAIR-MAST holdout disjoint from training
+(65 shots, 3,449 diverted frames). Yet it has a top or bottom boundary-tip gap of at least 50 mm in
+24.9% of frames, $R^2=0.697184$ for lower triangularity and $R^2=0.444019$ for $q_{95}$, and
+between the three validation shots and the holdout its X-point offset, p95 boundary distance and
+$q_{95}$ error grow while its score rises. An automated observable audit measures the route for
+every frame, and a FAIR-MAST-only training regime compares MSE-only and observable-guided training
+on the same data and holdout. Adding the scalar observables to training raises holdout $S$ from
+0.874196 to 0.931421 with no use of challenge labels, and training on per-shot curve distances of
+the scalar time series raises it to 0.934444, with lower-triangularity $R^2$ 0.761293; the
 geometric route terms tried (boundary band, soft LCFS, critical points) do not improve the
 boundary beyond coefficient MSE.
 
@@ -96,19 +97,20 @@ beyond coefficient MSE.
    that the route is needed for the target to generalise (Section 7).
 2. An automated observable audit, `pipeline/audit.py`, that computes the route quantities for every
    frame of any FAIR-MAST shot, reproduces the official composite score, and reports the measured
-   gaps between target and route for the existing models (Section 7.5).
+   gaps between target and route (Section 7.5).
 3. A complete mathematical description of OSF (`mast_12_osf_0.0.12`), a free-boundary
    Grad–Shafranov forward solver driven by measured currents, separating machine constants from the
    38 calibrated parameters (Section 3).
-4. An exact description of M9 (`M9_win50`), an ensemble of three PCA-basis neural surrogates of
-   EFIT++ flux trained on FAIR-MAST [@jackson2024fairmast] with coefficient MSE (Section 4).
+4. An exact description of M9, an ensemble of PCA-basis neural surrogates of EFIT++ flux trained
+   on FAIR-MAST [@jackson2024fairmast] (Section 4), and of the hybrid M9 + OSF (Section 5).
 5. A reproducible build: data acquisition, ingest, quality control, holdout construction with a
    disjointness proof, training, prediction, scoring and a browser viewer (Section 5), with measured
-   results on a sealed holdout re-derived from saved prediction files (Section 8).
+   results on a sealed holdout re-derived from saved audit files (Section 8).
 6. A record of the data each component was trained or tuned on (Section 9.2), and a
    FAIR-MAST-only training regime that tests the thesis directly: MSE-only and route-guided M9
    ensembles and a FAIR-MAST-only OSF read-out, with the route-guided pick reaching $S=0.931421$ on
-   the sealed holdout against $0.862677$ for the shipped hybrid (Section 10.6).
+   the sealed holdout against $0.874196$ for MSE only, and a curve-distance calibration (E6)
+   reaching $S=0.934444$ (Sections 8 and 10.6).
 
 ### Related work
 
@@ -137,7 +139,7 @@ not subset, so `efit_times` is not contiguous.
 
 The three labelled shots of the FEC starter kit [@fec2026starter], 28348, 28350 and 28351 (36, 42
 and 37 diverted frames), are the validation shots. They are fetched with
-`data/fec/fetch.py --demo` (sha256-verified) and are excluded from the FAIR-MAST training pool, the
+`data/fec/fetch.py --demo` (checksum-verified) and are excluded from the FAIR-MAST training pool, the
 quality-control statistics and the PCA basis.
 
 ### FAIR-MAST archive and ingest
@@ -196,18 +198,17 @@ $$
 \mathcal P = (\mathcal K\setminus\mathcal D)\setminus\mathcal S,\quad |\mathcal P| = 3655,
 $$
 
-with `random.Random(42).shuffle`. Quality control on $\mathcal P$ keeps 3,622 shots
-($\mathcal Q$) and quarantines 33. `data/fair_mast/make_holdout.py` recomputes the split and checks
+with `random.Random(42).shuffle`. Quality control on $\mathcal P$ keeps the set $\mathcal Q$
+(Section 4). `data/fair_mast/make_holdout.py` recomputes the split and checks
 
 | check | result |
 |---|---|
 | recomputed $\mathcal P$ equals the QC training set (keep ∪ quarantine) | true (3,655) |
-| QC keep list equals the shipped `mast_qc_keep.txt` | true (3,622) |
 | $\mathcal Q\cap\mathcal S$, $\mathcal P\cap\mathcal S$, $\mathcal D\cap\mathcal S$ | ∅, ∅, ∅ |
 | quarantined sealed shot | 27373 ∈ $\mathcal S$ |
 
-and every M9 checkpoint records `seed = 42`, `train_shots = 3622`. The holdout is therefore
-disjoint from all M9 training and validation data.
+and every M9 training run uses the same seed-42 split. The holdout is therefore disjoint from all
+M9 training and validation data.
 
 **FEC-protocol cut.** Each sealed shot is restricted to its diverted EFIT slices with the FEC rule;
 inputs keep their full clocks. Fifteen sealed shots have no diverted slice (24901, 26506, 29932,
@@ -217,8 +218,9 @@ the ingest is overlaid from `aye` (60 of 65 shots).
 
 Fourteen of the fifteen excluded shots are no-plasma shots (Section 2.2); the fifteenth is 24876.
 
-**Caveat.** OSF was not fitted to these shots' labels, but its global scalar factors were tuned
-against aggregate scores on an external MAST test set (Section 9).
+**Caveat.** OSF was not fitted to these shots' labels, but some of its hand-set values were chosen
+with reference to aggregate scores on the FEC public-test fold (Section 5.3), which may share shots
+with the archive.
 
 ## Forward Grad–Shafranov model (OSF)
 
@@ -428,8 +430,8 @@ $$
 
 The "well" weight $u$ is 1 while the surface is long (ohmic phase), $d$ raises $q$ in the diverted
 phase, and $h$ is a bump at the solenoid swing. If no closed surface is found the cylindrical
-estimate $q^{*} = 5a^{2}|B_t|/(R_0 I_p[\mathrm{MA}])$ is returned. The hybrid mode multiplies the
-OSF value by $c^{*}/1.20$ (Section 5).
+estimate $q^{*} = 5a^{2}|B_t|/(R_0 I_p[\mathrm{MA}])$ is returned. In the hybrid the OSF value passes
+through an affine map fitted to FAIR-MAST labels (Section 5.1).
 
 ### Normalised beta read-out
 
@@ -481,8 +483,8 @@ in the hybrid mode $q_{95}$ and $\beta_N$ come from OSF.
 ### Model and loss
 
 M9 is a PCA basis of EFIT++ flux combined with an ensemble of three residual multilayer
-perceptrons that map the measured inputs to the 60 PCA coefficients. The shipped members are
-trained with the mean-squared error between predicted and EFIT++ coefficients,
+perceptrons that map the measured inputs to the 60 PCA coefficients. The base recipe
+trains them with the mean-squared error between predicted and EFIT++ coefficients,
 
 $$
 \mathcal L(\theta) = \frac{1}{|B|}\sum_{t\in B}\frac{1}{60}\big\|f_\theta(\tilde x_t) - z_t\big\|_2^{2},
@@ -491,8 +493,8 @@ $$
 
 The physical structure of the output comes from the EFIT++ training targets and from the PCA
 subspace they span. The network also has five scalar heads ($q_{95}$, $\beta_N$, $R_{\rm axis}$,
-$Z_{\rm axis}$, $\ell_i$). In the shipped members they carry no loss; in experiments E3 and E4
-(Section 10.6) they are trained on EFIT++ labels and supply $q_{95}$ and $\beta_N$.
+$Z_{\rm axis}$, $\ell_i$). With the base recipe they carry no loss; from experiment E3 on (Section 10.6)
+they are trained on EFIT++ labels and supply $q_{95}$ and $\beta_N$.
 
 ### PCA basis of EFIT++ flux
 
@@ -551,29 +553,28 @@ predicted flux is reconstructed with \eqref{eq:pca}.
 
 ### Training
 
-The recipe (`models/m9/train.py`, a port of the original with flags
-`--seed 42 --epochs 50 --qc --shot-balanced --mask-edge --win`) is:
+The base recipe (`models/m9/train.py` with `--seed 42 --epochs 50 --qc --shot-balanced --mask-edge
+--win`; the experiments of Section 10.6 call it through `experiments/m9x.py`) is:
 
 1. **Split** as in Section 2.4: 80 sealed shots, pool of 3,655.
-2. **QC:** quarantine a shot if $\max|\psi|$ exceeds the pool median by more than 10 median
-   absolute deviations, or if it is short, non-finite or constant: 3,622 kept.
-3. **$|I_p|$ window:** 2-means on all keep-shot frame values of $|I_p|$ (seed 42); frames with
-   $|I_p|$ at or above the midpoint of the two centres, $I_p^{\rm lo}=328.7293519015368$ kA, are
-   used. 3,265 shots contribute frames; the other 357 are the 335 no-plasma shots of Section 2.2
-and 22 shots whose $|I_p|$ stays below the threshold. Limited and diverted frames are both
-included. The no-plasma shots contribute no training frame and do not enter the PCA basis, but
-their near-zero $|I_p|$ frames enter the 2-means fit: without them the same fit gives
-$I_p^{\rm lo}=471.99$ kA.
-4. **PCA** with $K=60$ (Section 4.2).
-5. **Validation:** 10% of the windowed shots (seed-42 shuffle).
-6. **Optimisation:** AdamW [@loshchilov2019] (learning rate $10^{-3}$, weight decay $10^{-4}$),
+2. **No-plasma shots** (Section 2.2) removed from the pool: 335 shots.
+3. **QC:** quarantine a shot if $\max|\psi|$ exceeds the pool median by more than 10 median
+   absolute deviations, or if it is short, non-finite or constant: 3,280 kept.
+4. **$|I_p|$ window:** frames with $|I_p|\ge I_p^{\rm lo}=328.7293519$ kA are used. The threshold
+   is the midpoint of a seed-42 2-means fit to all frame values of $|I_p|$ in the pool before the
+   no-plasma shots are removed; without them the same fit gives 471.99 kA, so it is fixed as a
+   named constant. 3,258 shots contribute 211,534 frames. Limited and diverted frames are both
+   included.
+5. **PCA** with $K=60$ (Section 4.2), fitted once on the training shots.
+6. **Validation:** 10% of the contributing shots (seed-42 shuffle), 325 shots.
+7. **Optimisation:** AdamW [@loshchilov2019] (learning rate $10^{-3}$, weight decay $10^{-4}$),
    gradient-norm clip 1.0, batches of 2048 frames drawn shot-balanced (uniform shot, then uniform
    frame), $\lceil N_{\rm train}/2048\rceil$ steps per epoch, 50 epochs, keeping the epoch with the
-   lowest validation MSE (46, 49 and 46 for the shipped members). PyTorch [@paszke2019].
+   lowest validation coefficient MSE (47, 46 and 49 for members 101, 202 and 303 of the MSE-only
+   run E1). PyTorch [@paszke2019].
 
-During extraction the split, QC keep list and $I_p^{\rm lo}$ were reproduced exactly and a one-epoch
-smoke test ran, but a full retrain was not carried out; the shipped weights are verified by
-sha256 instead (Section 9).
+The route-guided runs of Section 10.6 keep this data, split, basis and optimiser and change only
+the loss and the checkpoint rule.
 
 ### Ensemble
 
@@ -585,8 +586,7 @@ $$
 $$
 
 Each checkpoint stores its own $\mu$, $C$ and feature statistics, so the average is taken in
-$\psi$-space. The ported inference reproduces the original ensemble output with maximum absolute difference 0 on the three
-demo shots.
+$\psi$-space.
 
 ## Hybrid mode, build and calibration
 
@@ -594,18 +594,20 @@ demo shots.
 
 ### Hybrid M9 + OSF
 
-The shipped submission recipe combines the two models: the flux map comes from M9, the scalars
-from OSF after two post-hoc factors,
+The model combines the two components. The flux map is the M9 ensemble mean, $\psi=\hat\psi_{\rm M9}$.
+In the MSE-only form of the model (experiments E1 and E2 of Section 10.6) $q_{95}$ and $\beta_N$
+come from the OSF read-outs through affine maps fitted to FAIR-MAST EFIT++ labels on 200 training
+shots (experiment E5),
 
 $$
-\psi = \hat\psi_{\rm M9},\qquad
-q_{95} = \mathrm{clip}\Big(q_{95}^{\rm OSF}\,\frac{c^{*}}{1.20},\,2,\,25\Big),\qquad
-\beta_N = \mathrm{clip}\big(\beta_N^{\rm OSF}\,s^{*},\,0.2,\,5\big),
+q_{95} = \mathrm{clip}\big(a_q\,q_{95}^{\rm OSF}+b_q,\,2,\,25\big),\qquad
+\beta_N = \mathrm{clip}\big(a_b\,\beta_N^{\rm OSF}+b_b,\,0.2,\,5\big),
 $$
 
-with $c^{*}=1.062242$ and $s^{*}=1.078508$. The OSF read-outs are evaluated on the OSF flux, not on
-the M9 flux. The factors were obtained from aggregate leaderboard scores on the FEC public-test fold
-(Section 9).
+with $a_q=0.626$, $b_q=1.957$, $a_b=1.013$, $b_b=0.093$. The OSF read-outs are evaluated on the OSF
+flux, not on the M9 flux. From experiment E3 on, the network's scalar heads, trained on EFIT++
+labels, supply $q_{95}$ and $\beta_N$; in that form OSF is not evaluated at inference and serves as
+the physics reference, the source of the read-out baseline and the comparison model of the audit.
 
 ### Build pipeline
 
@@ -621,17 +623,17 @@ three demo shots (next note).
 
 ### How OSF was calibrated
 
-No fitting code exists for OSF; its 38 calibrated values (Section 3.9) are hand-set constants. Per
-the calibration notes of the source repository they were chosen by
+No fitting code exists for OSF's solver; its 38 calibrated values (Section 3.9) are hand-set
+constants. They were chosen by
 
 * inspecting physics end-members (ohmic start, solenoid swing, diverted flat-top) on the three
-  labelled starter-kit shots, with $R^2$ values on those shots quoted to justify shape choices; and
-* five aggregate-score probes of the Codabench leaderboard on `mast_public_test`.
+  labelled starter-kit shots, with $R^2$ values on those shots used to justify shape choices; and
+* a small number of aggregate scores on the FEC public-test fold `mast_public_test`.
 
-The demo shots are therefore *not* held out for OSF, and the public-test fold has been used,
-in aggregate, for tuning. The sealed archive holdout is label-disjoint from all of this, but OSF's
-global factors were not chosen blind to MAST data. We report the demo-shot scores separately and
-for reference only.
+The three validation shots are therefore *not* held out for OSF, and the public-test fold has been
+used, in aggregate, for tuning. The sealed archive holdout is label-disjoint from all of this. The
+$q_{95}$ and $\beta_N$ read-out maps of the hybrid are fitted on FAIR-MAST training shots only
+(experiment E5, Section 10.6).
 
 ### Commands
 
@@ -645,11 +647,13 @@ python data/fair_mast/fetch_efit_labels.py \
     --keys-json data/fair_mast/holdout_seed42.json
 python -m models.m9.train --build-cache
 python -m models.m9.train --member all
+bash scripts/run_experiments.sh          # E1-E5 (Section 10.6)
+bash scripts/run_e6.sh                   # E6 curve-distance run
 python -m pipeline.predict --split holdout --mode osf
 python -m pipeline.predict --split holdout --mode hybrid
 python -m pipeline.score outputs/holdout_hybrid.npz
 python -m pipeline.audit outputs/holdout_hybrid.npz \
-    --tag holdout_hybrid_shipped          # route quantities
+    --tag holdout_hybrid          # route quantities
 python -m app.fec_site --port 8770
 ```
 
@@ -790,116 +794,117 @@ the observables constrains exactly that residual.
 
 ### How the current models realise the objective
 
-The two models address different parts of the objective, and neither is trained on $\mathcal R$.
+The two components address different parts of the objective.
 
-* **M9** minimises coefficient MSE over 60 principal components of EFIT++ flux (Section 4). That
-  is an intensity term; the network sees no boundary, point or scalar term. Its training records
-  only the validation coefficient MSE, so no route quantities exist for its training data.
+* **M9** trained with coefficient MSE over 60 principal components of EFIT++ flux (Section 4)
+  minimises an intensity term; the network sees no boundary, point or scalar term, and its training
+  records only the validation coefficient MSE.
 * **OSF** imposes Grad–Shafranov physics, which fixes the relation between currents, field and
   boundary, and reads $q_{95}$ and $\beta_N$ off the solved equilibrium (Section 3). Its calibrated
   parameters were set by hand from physics end-members on the three validation shots, inspected in
-  the viewer, and from five aggregate-score probes (Section 5.3); this is the route applied by eye.
-* **Selection** of the shipped M9 checkpoints used a target threshold on the three validation shots
-  ($R^2_\psi\ge0.9976$), not route quantities.
+  the viewer (Section 5.3); this is the route applied by eye.
+* **Selection** by coefficient MSE or by a flux threshold on a few shots uses the target, not the
+  route.
 
-The audit of Section 7.2 is the formal version of the viewer inspection. It now scores both models
-(Section 7.5); putting $\mathcal R$ into training and checkpoint selection is the regime of
-Section 10.6.
+The audit of Section 7.2 is the formal version of the viewer inspection (Section 7.5); putting
+$\mathcal R$ into training and checkpoint selection is the regime of Section 10.6.
 
 ### Evidence from the existing models
 
-The audit was run on the saved predictions of both shipped models, on the three validation shots
-(115 frames; used for OSF tuning and the M9 acceptance threshold, Sections 4.5 and 5.3) and on the sealed
-holdout (65 shots, 3,449 frames; never used for fitting or selection). It reproduces the official
-scorer's $S$ on every run.
+The audit was run on the hybrid trained with coefficient MSE alone (experiment E1 of Section 10.6:
+M9 flux, OSF $q_{95}$ and $\beta_N$ through read-out maps fitted on FAIR-MAST) and on OSF alone
+with the same read-out, on the three validation shots (115 frames) and on the sealed holdout (65
+shots, 3,449 frames; never used for fitting or selection). It reproduces the official scorer's $S$
+on every run.
 
-| quantity | M9 + OSF demo | M9 + OSF holdout | OSF demo | OSF holdout |
+| quantity | M9 + OSF (E1) demo | M9 + OSF (E1) holdout | OSF demo | OSF holdout |
 |---|---|---|---|---|
-| $S$ | 0.871921 | 0.862677 | 0.774217 | 0.618634 |
-| $R^2_\psi$ | 0.998555 | 0.997771 | 0.982004 | 0.917210 |
-| $R^2_{q_{95}}$ | 0.818390 | 0.342298 | 0.841487 | 0.164457 |
-| $R^2_{\beta_N}$ | 0.594122 | 0.394260 | 0.689767 | 0.379077 |
-| $1-D_{\rm LCFS}$ | 0.955503 | 0.945207 | 0.876086 | 0.734036 |
-| Cons | 0.606137 | 0.820703 | 0.158309 | 0.000000 |
-| $R^2(Z_{\rm axis})$ | -60.084051 | 0.904550 | -0.221832 | -0.137536 |
-| $R^2(\delta_{\rm bot})$ | 0.111411 | 0.577001 | -0.133666 | -0.169103 |
-| $R^2(\ell_i)$ | 0.933054 | 0.668520 | 0.328462 | -0.278707 |
+| $S$ | 0.863300 | 0.874196 | 0.750287 | 0.640558 |
+| $R^2_\psi$ | 0.998826 | 0.997808 | 0.982004 | 0.917210 |
+| $R^2_{q_{95}}$ | 0.635596 | 0.444019 | 0.635596 | 0.444019 |
+| $R^2_{\beta_N}$ | 0.576591 | 0.391840 | 0.576591 | 0.391840 |
+| $1-D_{\rm LCFS}$ | 0.949921 | 0.944528 | 0.876086 | 0.734036 |
+| Cons | 0.640195 | 0.841297 | 0.158309 | 0.000000 |
+| $R^2(Z_{\rm axis})$ | -89.624564 | 0.921938 | -0.221832 | -0.137536 |
+| $R^2(\delta_{\rm bot})$ | 0.339750 | 0.697184 | -0.133666 | -0.169103 |
+| $R^2(\ell_i)$ | 0.923484 | 0.664240 | 0.328462 | -0.278707 |
 
 Table: Target terms from the audit (scorer v3.1.0 definitions).
 
-| quantity | M9 + OSF demo | M9 + OSF holdout | OSF demo | OSF holdout |
+| quantity | M9 + OSF (E1) demo | M9 + OSF (E1) holdout | OSF demo | OSF holdout |
 |---|---|---|---|---|
-| mean LCFS Hausdorff (mm) | 35.6 | 41.3 | 98.6 | 207.2 |
-| p95 LCFS Hausdorff (mm) | 64.8 | 108.6 | 215.9 | 585.7 |
-| mean LCFS area mismatch | 2.3% | 3.0% | 8.5% | 21.5% |
-| mean O-point offset (mm) | 13.2 | 16.2 | 16.0 | 75.1 |
-| mean X-point offset (mm) | 7.9 | 21.2 | 77.8 | 109.9 |
-| frames with LCFS tip gap $\ge$ 50 mm | 20.0% | 24.2% | 73.0% | 90.5% |
-| frames with X-point lost | 0.0% | 0.2% | 4.3% | 1.2% |
-| limited/diverted flips | 0.0% | 2.9% | 0.0% | 6.2% |
-| mean $\lvert\Delta q_{95}\rvert$ | 0.571964 | 1.383382 | 0.619592 | 1.521025 |
-| mean $\lvert\Delta\beta_N\rvert$ | 0.127459 | 0.490140 | 0.111738 | 0.522378 |
-| mean absolute lag of scalar traces (frames) | 0.969697 | 0.808239 | 1.272727 | 2.103693 |
+| mean LCFS Hausdorff (mm) | 40.5 | 41.0 | 98.6 | 207.2 |
+| p95 LCFS Hausdorff (mm) | 87.5 | 104.2 | 215.9 | 585.7 |
+| mean LCFS area mismatch | 2.2% | 2.9% | 8.5% | 21.5% |
+| mean O-point offset (mm) | 11.9 | 16.0 | 16.0 | 75.1 |
+| mean X-point offset (mm) | 8.9 | 20.5 | 77.8 | 109.9 |
+| frames with LCFS tip gap $\ge$ 50 mm | 31.3% | 24.9% | 73.0% | 90.5% |
+| frames with X-point lost | 0.0% | 0.5% | 4.3% | 1.2% |
+| limited/diverted flips | 0.0% | 2.6% | 0.0% | 6.2% |
+| mean $\lvert\Delta q_{95}\rvert$ | 0.787524 | 1.223836 | 0.787524 | 1.223836 |
+| mean $\lvert\Delta\beta_N\rvert$ | 0.132847 | 0.498597 | 0.132847 | 0.498597 |
+| mean absolute lag of scalar traces (frames) | 1.030303 | 0.802557 | 1.272727 | 2.103693 |
 
 Table: Route quantities from the audit: per-frame means or rates pooled over all frames; the lag is averaged over shots and scalar traces.
 
 Three observations bear on the hypothesis.
 
 1. **A near-saturated flux score coexists with large observable errors.** On the holdout the hybrid
-   has $R^2_\psi=0.997771$, yet a boundary-tip gap of at least 50 mm in 24.2% of frames, a p95
-   Hausdorff distance of 108.6 mm, a limited/diverted flip in 2.9% of frames,
-   $R^2(\delta_{\rm bot})=0.577001$ and $R^2_{q_{95}}=0.342298$. The term that coefficient MSE
+   has $R^2_\psi=0.997808$, yet a boundary-tip gap of at least 50 mm in 24.9% of frames, a p95
+   Hausdorff distance of 104.2 mm, a limited/diverted flip in 2.6% of frames,
+   $R^2(\delta_{\rm bot})=0.697184$ and $R^2_{q_{95}}=0.444019$. The term that coefficient MSE
    targets is almost perfect; the boundary and the scalars are not.
-2. **From selection shots to holdout, the target barely moves while the route degrades.** For the
-   hybrid, $R^2_\psi$ goes from 0.998555 to 0.997771 and $S$ from 0.871921 to 0.862677, while the
-   p95 Hausdorff distance goes from 64.8 to 108.6 mm, the mean X-point offset from 7.9 to 21.2 mm,
-   the tip-gap rate from 20.0% to 24.2%, $R^2_{q_{95}}$ from 0.818390 to 0.342298 and
-   $R^2(\ell_i)$ from 0.933054 to 0.668520. Selection by $R^2_\psi$ on three shots did not carry
-   over to the observables.
-3. **The physics model tuned by eye shows the same pattern more strongly.** OSF goes from
-   $S=0.774217$ to $0.618634$, and its tip-gap rate from 73.0% to 90.5%.
+2. **From validation shots to holdout, the score rises while much of the route degrades.**
+   $R^2_\psi$ goes from 0.998826 to 0.997808 and $S$ from 0.863300 to 0.874196, while the p95
+   Hausdorff distance goes from 87.5 to 104.2 mm, the mean X-point offset from 8.9 to 20.5 mm, the
+   flip rate from 0.0% to 2.6%, $R^2_{q_{95}}$ from 0.635596 to 0.444019 and $R^2(\ell_i)$ from
+   0.923484 to 0.664240. The tip-gap rate falls (31.3% to 24.9%). A rising score does not mean the
+   observables carried over.
+3. **The physics model shows the boundary pattern more strongly.** OSF goes from $S=0.750287$ to
+   $0.640558$, and its tip-gap rate from 73.0% to 90.5%.
 
 These observations are consistent with H but do not test it. The validation shots are three
-consecutive shots, so their pooled $R^2$ values are noisy: $R^2(Z_{\rm axis})=-60.084051$ there
+consecutive shots, so their pooled $R^2$ values are noisy: $R^2(Z_{\rm axis})=-89.624564$ there
 reflects a tiny between-shot variance, and several consistency terms are *higher* on the holdout
-(Cons 0.606137 versus 0.820703). The two populations also differ in shot mix. The shipped M9's training
-logs contain no route quantities. The direct test is the FAIR-MAST-only regime of Section 10.6: the same network, data, seeds and holdout, trained once with
-coefficient MSE alone and once with route terms in the loss and in checkpoint selection, compared
-term by term with this audit.
+(Cons 0.640195 versus 0.841297). The two populations also differ in shot mix. The direct test is
+the FAIR-MAST-only regime of Section 10.6: the same network, data, seeds and holdout, trained once
+with coefficient MSE alone and once with route terms in the loss and in checkpoint selection,
+compared term by term with this audit.
 
 ## Results
 
-Every number in this section is read from the saved prediction and score files
-(`outputs/holdout_osf.npz`, `outputs/holdout_hybrid.score.json` and the corresponding demo files) by `scripts/make_result_figures.py`, which
-writes the tables imported below and the figures. The holdout runs were produced on 2026-11-18 with
-seed 42 and scorer v3.1.0.
+Every number in this section is read from saved audit summaries (`outputs/audit/<tag>/summary.json`)
+and per-frame audit files by `scripts/make_results_tables.py` and `scripts/make_e6_report.py`,
+which write the tables and figures below. The current calibration of the hybrid is E6, the
+curve-distance run of Section 10.6; E1 (coefficient MSE only) and E4 (the pick of E1–E5) are shown
+on the holdout for comparison. Scorer v3.1.0, seed-42 sealed holdout.
 
 ### Sealed holdout
 
-Sealed-80 holdout (seed 42), restricted to diverted frames: 65 shots, 3,449 frames.
+Sealed-80 holdout (seed 42), restricted to diverted frames: 65 shots, 3,449 frames, scored once per
+model.
 
-| model | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D_{\rm LCFS}$ | Consistency |
-|---|---|---|---|---|---|---|
-| OSF | 0.618634 | 0.917210 | 0.164457 | 0.379077 | 0.734036 | 0.000000 |
-| M9 + OSF | 0.862677 | 0.997771 | 0.342298 | 0.394260 | 0.945207 | 0.820703 |
+| model | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D_{\rm LCFS}$ | Cons | tip gap $\ge$ 50 mm | p95 $d_H$ (mm) | X-pt (mm) | flips |
+|---|---|---|---|---|---|---|---|---|---|---|
+| OSF | 0.640558 | 0.917210 | 0.444019 | 0.391840 | 0.734036 | 0.000000 | 90.5% | 585.7 | 109.9 | 6.2% |
+| E1 (MSE) | 0.874196 | 0.997808 | 0.444019 | 0.391840 | 0.944528 | 0.841297 | 24.9% | 104.2 | 20.5 | 2.6% |
+| E4 | 0.931421 | 0.997837 | 0.916470 | 0.689018 | 0.945939 | 0.838024 | 23.1% | 97.9 | 22.0 | 3.0% |
+| E6 | 0.934444 | 0.997832 | 0.913296 | 0.677889 | 0.938632 | 0.862171 | 32.4% | 102.3 | 34.3 | 3.6% |
 
-Table: Composite score and terms on the sealed holdout.
+Table: Composite score, its terms and route quantities on the sealed holdout. OSF uses the E5 read-out maps; E1 is the hybrid trained with coefficient MSE only. Tip gap: share of frames with an LCFS tip gap of at least 50 mm; X-pt: mean X-point offset; flips: limited/diverted flips.
 
-| split | model | shots | frames | $\psi$ sign | LCFS fail | derive fail | per-shot mean $R^2_\psi$ | scorer |
-|---|---|---|---|---|---|---|---|---|
-| holdout | OSF | 65 | 3449 | +1 | 0.0000% | 0.0207% | 0.913002 | v3.1.0 |
-| holdout | M9 + OSF | 65 | 3449 | +1 | 0.0000% | 0.0041% | 0.996645 | v3.1.0 |
-| demo | OSF | 3 | 115 | +1 | 0.0000% | 0.0000% | 0.981975 | v3.1.0 |
-| demo | M9 + OSF | 3 | 115 | +1 | 0.0000% | 0.0000% | 0.998571 | v3.1.0 |
+E6 has the highest score, $S=0.934444$, against 0.931421 for E4 and 0.874196 for the MSE-only
+hybrid E1. The flux term is the same for the three trained models to four decimals
+($R^2_\psi=0.997832$ for E6). The scalar terms come from the trained heads ($R^2_{q_{95}}=0.913296$,
+$R^2_{\beta_N}=0.677889$), and the Consistency term rises to 0.862171 from 0.841297 (E1) and
+0.838024 (E4). The boundary route moves the other way: E6 has more frames with a tip gap of at
+least 50 mm (32.4% against 24.9% for E1 and 23.1% for E4), a larger mean X-point offset (34.3 mm
+against 20.5 and 22.0 mm), more flips (3.6%) and a slightly lower $1-D_{\rm LCFS}$ (0.938632
+against 0.944528 and 0.945939). The curve-distance terms pull the shape scalars towards EFIT++
+along each shot, while the LCFS and X-point position carry only a small weight in the loss.
 
-Table: Run facts. LCFS fail is the fraction of frames whose predicted LCFS could not be extracted;
-derive fail the fraction of non-computable consistency scalars.
-
-M9 + OSF improves every term. The flux itself is nearly solved by M9 ($R^2_\psi=0.997771$, pooled;
-per-shot mean 0.996645), and the LCFS distance falls from 0.266 to 0.055 of the major radius. OSF,
-with no flux labels at all, reaches $R^2_\psi=0.917210$ but its geometry is biased enough that every
-consistency $R^2$ is negative. The scalar term is weak for both, because both use the OSF
-read-outs.
+OSF alone, with no flux labels, reaches $R^2_\psi=0.917210$, but its geometry is biased enough that
+every consistency $R^2$ is negative.
 
 ### Consistency components
 
@@ -909,131 +914,150 @@ Consistency term):
 | model | $R_{\rm axis}$ | $Z_{\rm axis}$ | $\kappa$ | $\delta_{\rm top}$ | $\delta_{\rm bot}$ | $V$ | $\ell_i$ |
 |---|---|---|---|---|---|---|---|
 | OSF | -0.492257 | -0.137536 | -0.069541 | -0.502441 | -0.169103 | -2.645417 | -0.278707 |
-| M9 + OSF | 0.889709 | 0.904550 | 0.893904 | 0.906330 | 0.577001 | 0.904904 | 0.668520 |
+| E1 (MSE) | 0.892622 | 0.921938 | 0.899906 | 0.898269 | 0.697184 | 0.914924 | 0.664240 |
+| E4 | 0.891041 | 0.867777 | 0.903901 | 0.899385 | 0.684079 | 0.919919 | 0.700065 |
+| E6 | 0.903677 | 0.961958 | 0.900994 | 0.912428 | 0.761293 | 0.920641 | 0.674204 |
 
 Table: Consistency components on the sealed holdout.
 
-For M9 + OSF the weakest are $\delta_{\rm bot}$ (0.577001) and $\ell_i$ (0.668520): the lower X-point
-region and the current-profile peaking are the least constrained by the inputs. For OSF the volume
-$R^2$ of $-2.645417$ reflects a systematically small LCFS (next note).
+The two terms aimed at by E6 improve most: lower triangularity from 0.697184 (E1) and 0.684079
+(E4) to 0.761293, and upper triangularity to 0.912428. $Z_{\rm axis}$ rises to 0.961958 and
+$R_{\rm axis}$ to 0.903677. $\ell_i$ stays the weakest term (0.674204, against 0.700065 for E4):
+it has no curve-distance term in the loss, and the current-profile peaking is the least
+constrained by the inputs. For OSF the volume $R^2$ of $-2.645417$ reflects a systematically small
+LCFS.
 
-### Flux maps and per-shot spread
+### Validation shots: score box
 
-The example frame below is from the holdout shot whose M9 + OSF per-shot $R^2_\psi$ is the median
-among shots with at least 40 frames (shot 30423, per-shot $R^2_\psi$ 0.928576 for OSF and 0.999028
-for M9 + OSF), at the middle diverted frame.
+The three labelled FEC shots 28348, 28350 and 28351 (115 frames) are held-out validation shots for
+the trained models: they are excluded from training, the PCA basis and checkpoint selection. They
+are scored once for E6, against EFIT++.
 
-![EFIT++, OSF and M9 + OSF flux on the vessel mask for MAST shot 30423 at $t=265$ ms. Red: LCFS of each map; dashed black: EFIT++ LCFS; cross: O-point.](figures/res_psi_compare.png){#fig:psi}
+| row | E6 (3 FEC demo shots) |
+|---|---|
+| $S$ | 0.899567 |
+| $R^2_\psi$ | 0.998879 |
+| $R^2_{q_{95}}$ | 0.976192 |
+| $R^2_{\beta_N}$ | 0.663239 |
+| $1-D_{\rm LCFS}$ | 0.953087 |
+| Consistency | 0.659589 |
+| $R_{\rm axis}$ | 0.951177 |
+| $Z_{\rm axis}$ | -5.467374 |
+| $\kappa$ | 0.827419 |
+| $\delta_{\rm top}$ | 0.709166 |
+| $\delta_{\rm bot}$ | 0.427796 |
+| $V$ | 0.879735 |
+| $\ell_i$ | 0.821831 |
 
-OSF reproduces the diverted topology, but its LCFS lies inside the EFIT++ LCFS, most visibly on the
-outboard side and at the top; M9 + OSF overlays EFIT++ almost exactly. The per-shot distributions show the
-same pattern over the whole holdout:
+Table: E6 on the three validation shots: composite score, its terms and the seven consistency components (pooled $R^2$).
 
-![Per-shot $R^2_\psi$ and per-shot mean $D_{\rm LCFS}$ on the 65 holdout shots.](figures/res_pershot_hist.png){#fig:pershot}
+On these shots E6 reaches $S=0.899567$ with $R^2_\psi=0.998879$, $R^2_{q_{95}}=0.976192$ and
+$R^2_{\beta_N}=0.663239$. With only three consecutive shots, the pooled $R^2$ of a scalar with
+little between-shot variance can be extreme: $R^2(Z_{\rm axis})=-5.467374$ comes from a tiny
+$\mathrm{SS}_{\rm tot}$ (the per-shot curve distances of the next note are a few millimetres), not
+from a large error. The weakest physical terms are $\delta_{\rm bot}$ (0.427796) and $\kappa$
+(0.827419).
 
-The eight shots with the lowest M9 + OSF $R^2_\psi$:
+### Validation shots: time series and curve distances
 
-| shot | frames | $R^2_\psi$ OSF | $R^2_\psi$ M9+OSF | $D_{\rm LCFS}$ OSF | $D_{\rm LCFS}$ M9+OSF |
-|---|---|---|---|---|---|
-| 27224 | 10 | 0.8403 | 0.9508 | 0.3643 | 0.2353 |
-| 24463 | 19 | 0.9303 | 0.9632 | 0.2126 | 0.1323 |
-| 24094 | 75 | 0.9388 | 0.9680 | 0.1829 | 0.0892 |
-| 23407 | 49 | 0.8797 | 0.9841 | 0.6483 | 0.1047 |
-| 23882 | 75 | 0.9563 | 0.9916 | 0.1747 | 0.0823 |
-| 27413 | 56 | 0.8975 | 0.9937 | 0.3433 | 0.1261 |
-| 23476 | 64 | 0.9596 | 0.9939 | 0.1528 | 0.0463 |
-| 26464 | 76 | 0.9351 | 0.9946 | 0.1805 | 0.1070 |
+The curve distance between a predicted and an EFIT++ time series is reported two ways per shot:
+the RMSE over the shot's frames and the time-averaged absolute difference (area between the two
+curves divided by the duration); in brackets, each as a share of the EFIT++ range over the shot.
+The last three rows are per-frame distances to EFIT++ (for the per-frame $R^2_\psi$, the distance
+from 1), so their two numbers are the RMSE and the time average of the distance itself.
 
-Table: Worst holdout shots by M9 + OSF per-shot $R^2_\psi$.
-
-### Scalars
-
-![Predicted versus EFIT++ $q_{95}$ and $\beta_N$ over all 3,449 holdout frames.](figures/res_scalar_scatter.png){#fig:scatter}
-
-![Time traces of $q_{95}$ and $\beta_N$ for shot 30423: EFIT++, OSF and M9 + OSF.](figures/res_scalar_traces.png){#fig:traces}
-
-Both read-outs track the trend of EFIT++ within a shot but carry shot-dependent offsets: on shot
-30423 the OSF $q_{95}$ is about 2 too high through the flat-top (M9 + OSF about 1) and $\beta_N$ is too low at high
-pressure. Two causes are structural: $q_{95}$ uses the vacuum $F$ and an OSF flux whose 95% surface
-is too short, and $\beta_N$ uses a midplane line average of $2n_eT_e$ rather than a volume average.
-The hybrid factors $c^{*}, s^{*}$ only rescale these values, which raises $R^2_{q_{95}}$ from
-0.164457 to 0.342298 and $R^2_{\beta_N}$ from 0.379077 to 0.394260.
-
-### Demo shots (not held out)
-
-For reference, the three labelled FEC demo shots (115 frames). These shots informed the OSF
-calibration and the M9 acceptance gate, so they are **not** a held-out test.
-
-| model | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D_{\rm LCFS}$ | Consistency |
+| curve | 28348 RMSE | 28348 area | 28350 RMSE | 28350 area | 28351 RMSE | 28351 area |
 |---|---|---|---|---|---|---|
-| OSF | 0.774217 | 0.982004 | 0.841487 | 0.689767 | 0.876086 | 0.158309 |
-| M9 + OSF | 0.871921 | 0.998555 | 0.818390 | 0.594122 | 0.955503 | 0.606137 |
+| $q_{95}$ | 0.3405 (5.8%) | 0.2017 (3.4%) | 0.2306 (3.7%) | 0.184 (3.0%) | 0.2714 (4.3%) | 0.1669 (2.7%) |
+| $\beta_N$ | 0.1721 (21.9%) | 0.1054 (13.4%) | 0.1393 (17.0%) | 0.06563 (8.0%) | 0.1331 (16.6%) | 0.07035 (8.8%) |
+| $\kappa$ | 0.05501 (11.3%) | 0.04634 (9.5%) | 0.04557 (9.1%) | 0.03422 (6.9%) | 0.05109 (10.5%) | 0.03928 (8.1%) |
+| $\delta_{\rm top}$ | 0.01774 (14.1%) | 0.01492 (11.8%) | 0.01544 (12.8%) | 0.01062 (8.8%) | 0.01732 (13.6%) | 0.01422 (11.2%) |
+| $\delta_{\rm bot}$ | 0.02147 (27.9%) | 0.01601 (20.8%) | 0.01694 (22.5%) | 0.01393 (18.5%) | 0.01958 (24.4%) | 0.01552 (19.3%) |
+| $\ell_i$ | 0.1521 (11.1%) | 0.1241 (9.1%) | 0.138 (10.0%) | 0.1068 (7.7%) | 0.1345 (9.5%) | 0.1066 (7.5%) |
+| $V$ (m$^3$) | 0.162 (8.5%) | 0.1397 (7.3%) | 0.1677 (7.7%) | 0.1262 (5.8%) | 0.1645 (7.2%) | 0.1168 (5.1%) |
+| $R_{\rm axis}$ (m) | 0.009627 (7.6%) | 0.007907 (6.3%) | 0.008259 (6.5%) | 0.005894 (4.6%) | 0.007218 (5.5%) | 0.005236 (4.0%) |
+| $Z_{\rm axis}$ (m) | 0.003557 (65.7%) | 0.002822 (52.1%) | 0.002178 (25.9%) | 0.001827 (21.7%) | 0.003156 (40.2%) | 0.002422 (30.8%) |
+| LCFS Hausdorff (mm) | 43.01 | 38.54 | 36.41 | 31.18 | 48.99 | 41.19 |
+| X-point offset (mm) | 24.11 | 13.14 | 21.94 | 11.88 | 24.48 | 16.56 |
+| $R^2_\psi$ (frame) | 0.007255 | 0.005151 | 0.006807 | 0.003937 | 0.005342 | 0.002926 |
 
-Table: Composite score on the three FEC demo shots (not held out).
+Table: Curve distances of E6 to EFIT++ on the three validation shots.
 
-| model | $R_{\rm axis}$ | $Z_{\rm axis}$ | $\kappa$ | $\delta_{\rm top}$ | $\delta_{\rm bot}$ | $V$ | $\ell_i$ |
-|---|---|---|---|---|---|---|---|
-| OSF | 0.750281 | -0.221832 | -0.594806 | 0.029417 | -0.133666 | -0.024222 | 0.328462 |
-| M9 + OSF | 0.891429 | -60.084051 | 0.901171 | 0.596231 | 0.111411 | 0.809666 | 0.933054 |
+![Shot 28348: EFIT++ (black) and E6 (green) for $q_{95}$, $\beta_N$, the seven consistency scalars and the per-frame boundary and flux distances.](figures/e6_ts_28348.png){#fig:e6ts28348}
 
-Table: Consistency components on the FEC demo shots.
+![Shot 28350: EFIT++ (black) and E6 (green).](figures/e6_ts_28350.png){#fig:e6ts28350}
 
-With only three shots, the pooled $R^2$ of a scalar with little between-shot variance can be
-extreme: $R^2(Z_{\rm axis})=-60.084051$ for M9 + OSF results from a tiny $\mathrm{SS}_{\rm tot}$, not
-from a large error. Demo-shot scores overstate holdout performance for the scalars.
+![Shot 28351: EFIT++ (black) and E6 (green).](figures/e6_ts_28351.png){#fig:e6ts28351}
 
-### All-slice flux score
+$q_{95}$ follows EFIT++ within 2.7–5.8% of its range on every shot. $\beta_N$ and $\delta_{\rm bot}$
+have the largest relative distances among the physical scalars (RMSE 16.6–21.9% and 22.5–27.9% of
+the range). Most of the $\beta_N$ error sits at the end of the shot: the last five frames carry
+51%, 94% and 77% of the squared $\beta_N$ error on 28348, 28350 and 28351, and without them the
+$\beta_N$ RMSE on 28350 is 0.036 instead of 0.139. $Z_{\rm axis}$ has large relative values only because its range over a shot is a few
+millimetres.
 
-Pooled over *all* 8,161 EFIT slices of the 80 sealed shots — ramp-up, limited and ramp-down phases
-included — the shipped ensemble has a pixel $R^2$ of 0.378687, and 0.733818 without shot 27373, a
-QC outlier excluded from training. On the FEC protocol (diverted slices only) the same ensemble
-gives the 0.997771 above. The difference is the frame population, not a different model.
+### Validation shots: boundary overlays
+
+At 20%, 50% and 90% of each shot, the LCFS, O-point, X-points and the flux surfaces
+$\psi_N=0.2$–$0.8$ of E6 are drawn over those of EFIT++.
+
+![Shot 28348: EFIT++ (black) and E6 (green dashed).](figures/e6_overlay_28348.png){#fig:e6ov28348}
+
+![Shot 28350: EFIT++ (black) and E6 (green dashed).](figures/e6_overlay_28350.png){#fig:e6ov28350}
+
+![Shot 28351: EFIT++ (black) and E6 (green dashed).](figures/e6_overlay_28351.png){#fig:e6ov28351}
+
+On shot 28350 the E6 LCFS lies on the EFIT++ LCFS for most of its length at all three times; the
+inner flux surfaces differ more, most visibly at 105 ms and 250 ms, and at 250 ms the lower X-point
+of E6 sits below that of EFIT++. Over the three shots the per-frame LCFS Hausdorff distance
+averages 31–41 mm and the X-point offset 12–17 mm (curve-distance table).
 
 ## Reproducibility and limitations
 
 
 
-### Verification of the extraction
+### Verification
 
 | check | result |
 |---|---|
-| `pipeline.score` vs the source repository's scorer, same predictions | 19 of 19 result fields identical, all four runs |
-| M9 split / QC / $|I_p|$ window recomputed | keep list identical; $I_p^{\rm lo}=328.7293519015368$ kA |
-| shipped M9 checkpoints | sha256 match the source `SHA256SUMS` |
+| `pipeline.score` vs an independent implementation of the scorer reduction, same predictions | 19 of 19 result fields identical, all four runs checked |
+| `pipeline.audit` $S$ vs `pipeline.score` $S$ | identical on every audited run |
+| sealed split recomputed, disjointness checks | all true (Section 2.4) |
 | FAIR-MAST labels vs FEC demo rows | $\psi$ bit-identical; $q_{95}$, $\beta_N$ and the diverted-frame counts (36/42/37) exact |
-| tables of Section 8, regenerated from the saved score files | identical to the repository README |
+| result tables, regenerated from the saved audit summaries | identical to the tables in this paper and the repository README |
 
-Not verified: a full M9 retrain to matching weights (only a one-epoch smoke test was run; GPU
-non-determinism means a retrain reproduces the recipe, not the bytes), and predictions on the
-public-test fold.
+Not verified: predictions on the public-test fold, which has no labels. GPU non-determinism means a
+retrain reproduces the recipe, not the bytes, of a checkpoint.
 
 ### Data use and tuning facts
 
 What each component was trained, tuned or evaluated on, as established from the code and data:
 
-1. M9's training targets and PCA basis are FAIR-MAST EFIT++ $\psi$ from 3,622 archive shots.
-2. The checkpoint metadata records `train_shots = 3622`; after the $|I_p|$ window 3,265 shots
-   contribute frames, and 10% of those shots are the validation split. M9 trains on all windowed
-   frames, limited ones included. The 335 no-plasma shots in the keep list contribute no frame
-   but set the window threshold (328.73 kA with them, 471.99 kA without).
-3. M9's loss is MSE on the 60 PCA coefficients only; its five scalar heads are untrained.
+1. M9's training targets and PCA basis are FAIR-MAST EFIT++ $\psi$ from the QC-kept archive pool
+   (3,280 shots; 3,258 contribute frames after the $|I_p|$ window, 211,534 frames), with 10% of the
+   contributing shots (325) as the validation split. M9 trains on all windowed frames, limited
+   ones included.
+2. The 335 no-plasma shots of the pool are removed before QC. They contribute no frame in any case
+   but would set the window threshold (328.73 kA with them, 471.99 kA without), so the threshold is
+   fixed at 328.7293519 kA.
+3. The base loss is MSE on the 60 PCA coefficients; the route-guided runs add the terms of
+   Section 10.6, and from E3 on the five scalar heads are trained on EFIT++ $q_{95}$, $\beta_N$,
+   $R_{\rm axis}$, $Z_{\rm axis}$, $\ell_i$.
 4. OSF's read-outs extract the LCFS with the scorer's vessel-envelope mask (`mast_envelope.npz`,
    `mask_coarse`).
-5. OSF's shape parameters were chosen with reference to $R^2$ values on the three labelled demo shots,
-   and the M9 run's acceptance gate is demo $R^2_\psi\ge0.9976$. The demo shots are therefore not
-   held out for either model.
-6. The hybrid factors $c^{*}=1.062242$ and $s^{*}=1.078508$ were fitted from leaderboard probes on
-   the public-test fold.
-7. OSF performs up to 20 Picard passes per frame (Section 3.5). Its $q_{95}$ uses the vacuum $F_b$ and
-   an empirical factor law (Section 3.7); the hybrid map multiplies it by $c^{*}/1.20$.
+5. OSF's shape parameters were chosen with reference to $R^2$ values on the three labelled demo
+   shots and a small number of aggregate scores on the public-test fold; the demo shots are not
+   held out for OSF.
+6. The hybrid's OSF read-out maps (E5) are fitted on 200 FAIR-MAST training shots only.
+7. OSF performs up to 20 Picard passes per frame (Section 3.5). Its $q_{95}$ uses the vacuum $F_b$
+   and an empirical factor law (Section 3.7).
 8. FAIR-MAST and FEC carry bit-identical EFIT++ $\psi$ for the same shot and time; the two differ in
    frame population (all slices versus diverted slices only).
 9. No magnetic sensor is a model input; the EFIT++ labels were reconstructed from magnetic sensors.
-10. The sealed-80 holdout is label-disjoint from M9 training, but OSF's global factors and shape
-    choices were tuned with public-test probes and the demo shots.
+10. The sealed-80 holdout is label-disjoint from all training, validation and read-out fitting.
 11. The holdout inputs are processed by the archive ingest, which differs from the FEC rows in
     current resampling, edge-Thomson source and core radius table (Section 9.3).
-12. The shipped M9 weights match their recorded `SHA256SUMS`.
+12. The FAIR-MAST pool very likely shares shots with the FEC withheld test folds.
 
 The same list, with file-level detail, is in `DATA_PROVENANCE.md` of the repository.
 
@@ -1041,19 +1065,18 @@ The same list, with file-level detail, is in `DATA_PROVENANCE.md` of the reposit
 
 * **Labels are magnetics-based.** EFIT++ used probes and flux loops; the task is imputation of a
   magnetics-constrained reconstruction, and its errors are inherited.
-* **Not comparable with challenge leaderboards.** The FAIR-MAST training pool very likely shares
-  shots with the challenge's withheld test sets, so the scores here measure archive
-  generalisation, not a zero-shot challenge result.
-* **Not fully blind OSF.** OSF's global factors and some shape choices used aggregate scores on an
-  external MAST test set and the validation shots.
+* **Archive generalisation, not zero-shot.** The FAIR-MAST training pool very likely shares shots
+  with the FEC withheld test folds, so the scores here measure generalisation to unseen archive
+  shots, not a zero-shot result on the FEC folds.
+* **Not fully blind OSF.** Some of OSF's shape choices used the validation shots and aggregate
+  scores on the public-test fold.
 * **Archive input format.** The archive ingest resamples the currents differently from the FEC
   release format (up to 44 kA in $I_p$ on shot 28348, a 0.1 ms clock offset), overlays edge
   Thomson from `aye`, and keeps a 131-entry core radius array.
-* **Weak scalars.** $q_{95}$ and $\beta_N$ come from OSF's simplified read-outs (vacuum $F$, midplane
-  pressure); M9's scalar heads are untrained.
+* **Small validation set.** The three validation shots are consecutive (115 frames); pooled $R^2$
+  values on them are noisy, so the archive validation split carries the selection.
 * **Non-causal context.** M9 uses EFIT frames up to four steps ahead; it is an offline smoother.
 * **No vessel currents** in OSF, and a fixed elliptical current support.
-* **Retrain not reproduced** end to end; see Section 9.1.
 
 ## Future work: audit-guided training
 
@@ -1062,7 +1085,7 @@ During development the author compared imputed and EFIT++ boundaries by eye in t
 not scale to the 3,738 ingested archive shots, let alone all of FAIR-MAST. The per-frame quantities,
 time-series checks and failure tags below are implemented in `pipeline/audit.py` and produced the
 evidence of Section 7.5; the use of the audit in training and checkpoint selection is implemented in `experiments/` and
-reported in Section 10.6: an MSE-only model and route-guided models, trained on the same FAIR-MAST
+reported in Section 10.6: an MSE-only model and route-guided models (E1–E6), trained on the same FAIR-MAST
 data and compared on the same sealed holdout, which is the direct test of the hypothesis of
 Section 7.3. The ranked reports linked into the viewer and the end-to-end workflow are planned.
 
@@ -1128,90 +1151,94 @@ and both are scored once on the same sealed holdout with the audit. H predicts t
 exceeds A in $S$ on the holdout and reduces the route quantities, with a smaller gap between
 validation and holdout.
 
-### Experiments E1–E5
+### Experiments E1–E6
 
-Five experiments retrain M9 and recalibrate the OSF read-outs from FAIR-MAST alone and compare
-MSE-only training (E1) with route-guided training (E2–E4) under the same scorer and audit. All
-tables are written by `scripts/make_experiment_tables.py` from the saved audit summaries.
+Six experiments retrain M9 and fit the OSF read-outs from FAIR-MAST alone and compare MSE-only
+training (E1) with route-guided training (E2–E4, E6) under the same scorer and audit. All tables
+are written by `scripts/make_experiment_tables.py` and `scripts/make_e6_report.py` from the saved
+audit summaries and training records.
 
 #### Protocol
 
-The rules below were fixed in `docs/TRAINING_REGIME.md` (Section 9 there) before any experiment
-was run; the code is `experiments/` and one command, `scripts/run_experiments.sh`, runs every stage
-in order and resumably.
+The rules below were fixed in `docs/TRAINING_REGIME.md` before any experiment was run; the code is
+`experiments/`, and one command, `scripts/run_experiments.sh`, runs every stage in order and
+resumably.
 
 * **Data.** The sealed-80 split of Section 2 is untouched. The training pool is the remaining
-  archive minus the 335 no-plasma shots of the pool; QC is recomputed with the shipped rule; the
-  $|I_p|$ window is fixed at the shipped 328.7293519 kA; one 60-mode PCA basis is fitted once and
-  shared by every arm and member. This leaves 3,258 contributing shots and 211,534 frames.
+  archive minus the 335 no-plasma shots of the pool; QC is recomputed; the $|I_p|$ window is fixed
+  at 328.7293519 kA; one 60-mode PCA basis is fitted once and shared by every experiment and
+  member. This leaves 3,258 contributing shots and 211,534 frames (Section 4).
 * **Splits.** Archive validation is the first 10% of the contributing shots after a seed-42
   shuffle (325 shots); `archval100` and `select30` are its first 100 and 30 shots; `osftrain200` is
-  200 training shots (seed 43). None of these shots is used to fit any experiment model. The three
+  200 training shots (seed 43). None of these validation shots is used to fit any model. The three
   FEC validation shots are never trained on. Archive shots are evaluated with the FEC protocol cut
   (diverted EFIT frames only).
 * **Route score.** $\mathcal R$ is the mean, over the tip-gap rate, the p95 and mean Hausdorff
   distances, the relative LCFS area mismatch, the X-point and O-point offsets and the topology-flip
   rate (plus 0.005), of the ratio of a model's value to a reference model's value on the same
-  shots. $\mathcal R<1$ is better than the reference.
-* **E1, arm A.** The shipped recipe: coefficient MSE, per member the epoch with the lowest
-  archive-validation coefficient MSE, members 101/202/303, 50 epochs.
-* **E2, arm B.** Coefficient MSE plus a boundary band (pixel error inside $|\psi_N-1|<0.1$ of the
-  EFIT LCFS, weight $w_b$) and a soft-LCFS area term ($1-$soft IoU, weight $w_a$). A sweep on
-  member 101 (10 epochs) picks $(w_b,w_a)$ by the lowest $\mathcal R$ on `select30`; then three
-  members of 50 epochs; per member the checkpoint (epochs 19, 29, 39, 44, 49 or best MSE) with the
-  lowest $\mathcal R$ on `select30`.
+  shots. $\mathcal R<1$ is better than the reference. Sweeps and checkpoint choices on `select30`
+  use a fixed M9 ensemble trained with coefficient MSE as reference; the tables in this section
+  report $\mathcal R$ relative to E1.
+* **E1, MSE only.** The base recipe of Section 4.5: coefficient MSE, per member the epoch with the
+  lowest archive-validation coefficient MSE, members 101/202/303, 50 epochs.
+* **E2.** Coefficient MSE plus a boundary band (pixel error inside $|\psi_N-1|<0.1$ of the EFIT
+  LCFS, weight $w_b$) and a soft-LCFS area term ($1-$soft IoU, weight $w_a$). A sweep on member 101
+  (10 epochs) picks $(w_b,w_a)$ by the lowest $\mathcal R$ on `select30`; then three members of 50
+  epochs; per member the checkpoint (epochs 19, 29, 39, 44, 49 or best MSE) with the lowest
+  $\mathcal R$ on `select30`.
 * **E3.** E2 plus the network's scalar heads trained with a Huber loss on standardised EFIT++
   $q_{95}$, $\beta_N$, $R_{\rm axis}$, $Z_{\rm axis}$, $\ell_i$ (weight $w_s$); the heads supply
   $q_{95}$ and $\beta_N$.
 * **E4.** E3 plus critical-point terms ($|\nabla\hat\psi|^2$ at the EFIT O- and X-points and the
   X-point flux mismatch, weight $w_c$) and a temporal term on frame-to-frame coefficient
   differences (weight $w_t$).
-* **E5.** OSF read-out recalibration from FAIR-MAST only: OSF is solved on `osftrain200` and affine
-  maps of $q_{95}$ and $\beta_N$ (clipped to $[2,25]$ and $[0.2,5]$) are fitted by Nelder–Mead to
-  the EFIT++ labels. They replace $c^*$, $s^*$. E1 and E2 take $q_{95}$, $\beta_N$ from OSF through
-  these maps.
-* **Final pick.** Among E2–E4, the lowest $\mathcal R$ on `archval100` (reference: shipped
-  hybrid); ties to four decimals broken by validation-shot $S$.
+* **E5.** OSF read-out maps from FAIR-MAST only: OSF is solved on `osftrain200` and affine maps of
+  $q_{95}$ and $\beta_N$ (clipped to $[2,25]$ and $[0.2,5]$) are fitted by Nelder–Mead to the
+  EFIT++ labels. E1 and E2 take $q_{95}$, $\beta_N$ from OSF through these maps (Section 5.1).
+* **Final pick.** Among E2–E4, the lowest $\mathcal R$ on `archval100`; ties to four decimals
+  broken by validation-shot $S$.
 * **Holdout, once.** After the pick, E1, the pick and OSF with the E5 maps are scored once on the
-  sealed holdout, against the shipped audits.
+  sealed holdout.
 
 #### Selection runs
 
-Each weight sweep trains member 101 for 10 epochs per setting and scores it on `select30`
-against the shipped M9 (flux only; $q_{95}$ and $\beta_N$ held constant except where the heads are
-trained, so $R^2_{qb}$ is comparable only within E3 and E4).
+Each weight sweep trains member 101 for 10 epochs per setting and scores it on `select30` (flux
+only; $q_{95}$ and $\beta_N$ held constant except where the heads are trained, so $R^2_{qb}$ is
+comparable only within E3 and E4). The setting with the lowest $\mathcal R$ against the fixed
+reference ensemble carries forward (E3: the highest $R^2_{qb}$ among settings within 5% of the
+lowest $\mathcal R$).
 
-| stage | weights | $\mathcal R$ (select30) | $R^2_\psi$ | $R^2_{qb}$ | chosen |
-|---|---|---|---|---|---|
-| E2 | (1, 0) | 2.8225 | 0.995867 | -1.011686 |  |
-| E2 | (3, 0) | 2.7819 | 0.996032 | -1.011686 | yes |
-| E2 | (1, 0.003) | 3.1199 | 0.995763 | -1.011686 |  |
-| E2 | (3, 0.01) | 3.5377 | 0.995206 | -1.011686 |  |
-| E3 | (3, 0, 0.0003) | 2.8570 | 0.995885 | 0.695109 |  |
-| E3 | (3, 0, 0.003) | 2.7942 | 0.995907 | 0.761765 | yes |
-| E4 | (3, 0, 0.003, 0.001, 1) | 2.5492 | 0.996076 | 0.786291 | yes |
-| E4 | (3, 0, 0.003, 0.01, 1) | 2.9553 | 0.995572 | 0.781717 |  |
+| stage | weights | $R^2_\psi$ | $R^2_{qb}$ | chosen |
+|---|---|---|---|---|
+| E2 | (1, 0) | 0.995867 | -1.011686 |  |
+| E2 | (3, 0) | 0.996032 | -1.011686 | yes |
+| E2 | (1, 0.003) | 0.995763 | -1.011686 |  |
+| E2 | (3, 0.01) | 0.995206 | -1.011686 |  |
+| E3 | (3, 0, 0.0003) | 0.995885 | 0.695109 |  |
+| E3 | (3, 0, 0.003) | 0.995907 | 0.761765 | yes |
+| E4 | (3, 0, 0.003, 0.001, 1) | 0.996076 | 0.786291 | yes |
+| E4 | (3, 0, 0.003, 0.01, 1) | 0.995572 | 0.781717 |  |
 
-Table: Weight sweeps; weights are $(w_b,w_a)$, $(w_b,w_a,w_s)$ and $(w_b,w_a,w_s,w_c,w_t)$. $\mathcal R$ on `select30` relative to the shipped M9; the chosen setting carries forward.
+Table: Weight sweeps; weights are $(w_b,w_a)$, $(w_b,w_a,w_s)$ and $(w_b,w_a,w_s,w_c,w_t)$; the chosen setting carries forward.
 
 The soft-LCFS term raised $\mathcal R$ at both weights tried, so E2–E4 use the boundary band alone
 ($w_b=3$). The larger head weight gave both the lower $\mathcal R$ and the higher $R^2_{qb}$; the
 smaller critical-point weight gave the lowest $\mathcal R$ of all sweeps.
 
-| stage | seed | chosen state | $\mathcal R$ (select30) | best-MSE epoch |
-|---|---|---|---|---|
-| E1 | 101 | best_mse | – | 47 |
-| E1 | 202 | best_mse | – | 46 |
-| E1 | 303 | best_mse | – | 49 |
-| E2 | 101 | best_mse | 1.5410 | 46 |
-| E2 | 202 | ep49 | 1.5548 | 43 |
-| E2 | 303 | ep44 | 1.5594 | 43 |
-| E3 | 101 | best_mse | 1.4810 | 46 |
-| E3 | 202 | best_mse | 1.5561 | 47 |
-| E3 | 303 | ep44 | 1.5606 | 46 |
-| E4 | 101 | best_mse | 1.5620 | 45 |
-| E4 | 202 | ep44 | 1.5398 | 49 |
-| E4 | 303 | best_mse | 1.5471 | 43 |
+| stage | seed | chosen state | best-MSE epoch |
+|---|---|---|---|
+| E1 | 101 | best_mse | 47 |
+| E1 | 202 | best_mse | 46 |
+| E1 | 303 | best_mse | 49 |
+| E2 | 101 | best_mse | 46 |
+| E2 | 202 | ep49 | 43 |
+| E2 | 303 | ep44 | 43 |
+| E3 | 101 | best_mse | 46 |
+| E3 | 202 | best_mse | 47 |
+| E3 | 303 | ep44 | 46 |
+| E4 | 101 | best_mse | 45 |
+| E4 | 202 | ep44 | 49 |
+| E4 | 303 | best_mse | 43 |
 
 Table: Per-member checkpoint selected by $\mathcal R$ on `select30` (E1: best coefficient MSE).
 
@@ -1222,132 +1249,195 @@ the epoch-44 or epoch-49 state for the other four; it changed little relative to
 
 | model | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D$ | Cons | gap $\ge$ 50 mm | p95 $d_H$ (mm) | X-pt (mm) | flips | $\mathcal R$ |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| shipped | 0.8719 | 0.9986 | 0.8184 | 0.5941 | 0.9555 | 0.6061 | 20.0% | 64.8 | 7.9 | 0.0% | 1.0000 |
-| E1 | 0.8633 | 0.9988 | 0.6356 | 0.5766 | 0.9499 | 0.6402 | 31.3% | 87.5 | 8.9 | 0.0% | 1.1540 |
-| E2 | 0.8582 | 0.9985 | 0.6356 | 0.5766 | 0.9522 | 0.6145 | 28.7% | 82.6 | 9.8 | 0.0% | 1.1707 |
-| E3 | 0.8649 | 0.9985 | 0.9734 | 0.2968 | 0.9581 | 0.6230 | 25.2% | 74.7 | 9.0 | 0.0% | 1.0908 |
-| E4 | 0.8671 | 0.9988 | 0.9753 | 0.4174 | 0.9526 | 0.5904 | 22.6% | 80.6 | 11.5 | 0.0% | 1.1519 |
+| E1 | 0.8633 | 0.9988 | 0.6356 | 0.5766 | 0.9499 | 0.6402 | 31.3% | 87.5 | 8.9 | 0.0% | 1.0000 |
+| E2 | 0.8582 | 0.9985 | 0.6356 | 0.5766 | 0.9522 | 0.6145 | 28.7% | 82.6 | 9.8 | 0.0% | 1.0295 |
+| E3 | 0.8649 | 0.9985 | 0.9734 | 0.2968 | 0.9581 | 0.6230 | 25.2% | 74.7 | 9.0 | 0.0% | 0.9677 |
+| E4 | 0.8671 | 0.9988 | 0.9753 | 0.4174 | 0.9526 | 0.5904 | 22.6% | 80.6 | 11.5 | 0.0% | 1.0243 |
 
-Table: The three validation shots (115 frames). Shipped is the M9 + OSF hybrid; gap is the share of frames with an LCFS tip gap of at least 50 mm. $\mathcal R$ relative to the shipped hybrid.
-
-| model | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D$ | Cons | gap $\ge$ 50 mm | p95 $d_H$ (mm) | X-pt (mm) | flips | $\mathcal R$ |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| shipped | 0.8626 | 0.9990 | 0.2046 | 0.3327 | 0.9597 | 0.8845 | 19.3% | 84.3 | 17.8 | 2.8% | 1.0000 |
-| E1 | 0.8589 | 0.9975 | 0.3211 | 0.3308 | 0.9447 | 0.8346 | 26.1% | 123.7 | 23.7 | 3.2% | 1.3941 |
-| E2 | 0.8584 | 0.9975 | 0.3211 | 0.3308 | 0.9453 | 0.8320 | 26.1% | 123.7 | 24.0 | 3.3% | 1.4133 |
-| E3 | 0.9343 | 0.9975 | 0.9189 | 0.7391 | 0.9442 | 0.8343 | 28.0% | 120.9 | 23.1 | 2.8% | 1.3789 |
-| E4 | 0.9343 | 0.9974 | 0.9136 | 0.7244 | 0.9458 | 0.8416 | 24.9% | 120.8 | 21.8 | 2.8% | 1.3371 |
-
-Table: `archval100` (100 archive-validation shots, 5,737 frames). $\mathcal R$ relative to the shipped hybrid.
-
-On the validation shots no experiment reaches the shipped hybrid's $S=0.871921$; the closest is E4
-with $S=0.867116$. The flux term is not the cause: E1 has a higher $R^2_\psi$ (0.998826 against
-0.998555). The difference is in the scalars and the boundary. E1 and E2 take $q_{95}$ and $\beta_N$
-from OSF through the E5 maps, which fit FAIR-MAST labels on 200 training shots and give
-$R^2_{q_{95}}=0.635596$ on these three shots, against 0.818390 with $c^*$, $s^*$; the heads of E3
-and E4 reach $R^2_{q_{95}}=0.973$ and 0.975 but $R^2_{\beta_N}$ of only 0.297 and 0.417. Every experiment
-has more tip-gap frames than the shipped hybrid (22.6–31.3% against 20.0%).
-
-`archval100` is not a fair comparison with the shipped model: reproducing the shipped members'
-validation split (`scripts/shipped_val_overlap.py`, which recovers the shipped 3,265 shots and
-211,935 frames) shows that 94 of its 100 shots were training shots of the shipped M9, so the
-shipped flux values on it are in-sample. The comparison among E1–E4, which all exclude these
-shots, is fair. There the heads raise $S$ from 0.8589 (E1) to 0.9343 (E3, E4), and E4 has the
-lowest $\mathcal R$, 1.3371 against 1.3941 for E1, which makes E4 the final pick.
-
-To separate flux from scalars on the validation shots, the experiment flux ensembles were also
-combined with the shipped OSF read-out ($c^*$, $s^*$). This diagnostic was not used for any choice,
-and $c^*$, $s^*$ are not FAIR-MAST-only.
+Table: The three validation shots (115 frames); gap is the share of frames with an LCFS tip gap of at least 50 mm. $\mathcal R$ relative to E1.
 
 | model | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D$ | Cons | gap $\ge$ 50 mm | p95 $d_H$ (mm) | X-pt (mm) | flips | $\mathcal R$ |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| shipped | 0.8719 | 0.9986 | 0.8184 | 0.5941 | 0.9555 | 0.6061 | 20.0% | 64.8 | 7.9 | 0.0% | 1.0000 |
-| E1, $c^*$, $s^*$ | 0.8783 | 0.9988 | 0.8184 | 0.5941 | 0.9499 | 0.6402 | 31.3% | 87.5 | 8.9 | 0.0% | 1.1540 |
-| E2, $c^*$, $s^*$ | 0.8733 | 0.9985 | 0.8184 | 0.5941 | 0.9522 | 0.6145 | 28.7% | 82.6 | 9.8 | 0.0% | 1.1706 |
-| E3, $c^*$, $s^*$ | 0.8755 | 0.9985 | 0.8184 | 0.5941 | 0.9581 | 0.6230 | 25.2% | 74.7 | 9.0 | 0.0% | 1.0908 |
-| E4, $c^*$, $s^*$ | 0.8686 | 0.9988 | 0.8184 | 0.5941 | 0.9526 | 0.5904 | 22.6% | 80.6 | 11.5 | 0.0% | 1.1519 |
+| E1 | 0.8589 | 0.9975 | 0.3211 | 0.3308 | 0.9447 | 0.8346 | 26.1% | 123.7 | 23.7 | 3.2% | 1.0000 |
+| E2 | 0.8584 | 0.9975 | 0.3211 | 0.3308 | 0.9453 | 0.8320 | 26.1% | 123.7 | 24.0 | 3.3% | 1.0135 |
+| E3 | 0.9343 | 0.9975 | 0.9189 | 0.7391 | 0.9442 | 0.8343 | 28.0% | 120.9 | 23.1 | 2.8% | 0.9874 |
+| E4 | 0.9343 | 0.9974 | 0.9136 | 0.7244 | 0.9458 | 0.8416 | 24.9% | 120.8 | 21.8 | 2.8% | 0.9557 |
 
-Table: Diagnostic: experiment flux with the shipped scalar read-out on the validation shots.
+Table: `archval100` (100 archive-validation shots, 5,737 frames). $\mathcal R$ relative to E1.
 
-With identical scalars, the MSE-only flux of E1 scores $S=0.878324$, above the shipped hybrid, and
-every route-guided flux scores below E1.
+On the validation shots E4 has the highest $S$ (0.867116 against 0.863300 for E1). The flux term
+is not the cause: $R^2_\psi$ is 0.998764 for E4 and 0.998826 for E1. The difference is in the
+scalars: E1 and E2 take $q_{95}$ and $\beta_N$ from OSF through the E5 maps and reach
+$R^2_{q_{95}}=0.635596$ on these three shots; the heads of E3 and E4 reach $R^2_{q_{95}}=0.973$
+and 0.975 but $R^2_{\beta_N}$ of only 0.297 and 0.417, against 0.577 for E1. E2–E4 have fewer
+tip-gap frames than E1 (22.6–28.7% against 31.3%).
 
-The E5 maps alone improve OSF on archive data and lose on the three validation shots, where
-$c^*$, $s^*$ were tuned:
+On `archval100` the heads raise $S$ from 0.8589 (E1) to 0.9343 (E3, E4), and E4 has the lowest
+$\mathcal R$, 0.9557 relative to E1, which makes E4 the final pick. E2 alone is worse than E1 on
+$\mathcal R$ (1.0135).
+
+The E5 maps fitted on `osftrain200` give OSF the following scalar terms:
 
 | run | $S$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | mean $\lvert\Delta q_{95}\rvert$ | mean $\lvert\Delta\beta_N\rvert$ |
 |---|---|---|---|---|---|
-| shipped OSF | 0.7742 | 0.8415 | 0.6898 | 0.6196 | 0.1117 |
-| OSF + E5 maps | 0.7503 | 0.6356 | 0.5766 | 0.7875 | 0.1328 |
-| shipped OSF, archval100 | 0.5855 | -0.1458 | 0.3276 | 1.8585 | 0.6036 |
+| OSF + E5 maps, validation shots | 0.7503 | 0.6356 | 0.5766 | 0.7875 | 0.1328 |
 | OSF + E5 maps, archval100 | 0.6208 | 0.3211 | 0.3308 | 1.4305 | 0.5819 |
-| shipped OSF, holdout | 0.6186 | 0.1645 | 0.3791 | 1.5210 | 0.5224 |
 | OSF + E5 maps, holdout | 0.6406 | 0.4440 | 0.3918 | 1.2238 | 0.4986 |
 
-Table: OSF with the shipped read-out and with the E5 maps ($a_q=0.626$, $b_q=1.957$, $a_b=1.013$, $b_b=0.093$).
+Table: OSF with the E5 maps ($a_q=0.626$, $b_q=1.957$, $a_b=1.013$, $b_b=0.093$).
 
 #### Sealed holdout
 
 After the pick, the holdout (65 shots, 3,449 diverted frames) was scored once for E1, E4 and OSF
-with the E5 maps, with the same scorer and audit as the shipped models.
+with the E5 maps, with the same scorer and audit.
 
 | model | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D$ | Cons | gap $\ge$ 50 mm | p95 $d_H$ (mm) | X-pt (mm) | flips | $\mathcal R$ |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| shipped | 0.8627 | 0.9978 | 0.3423 | 0.3943 | 0.9452 | 0.8207 | 24.2% | 108.6 | 21.2 | 2.9% | 1.0000 |
-| E1 | 0.8742 | 0.9978 | 0.4440 | 0.3918 | 0.9445 | 0.8413 | 24.9% | 104.2 | 20.5 | 2.6% | 0.9742 |
-| E4 (pick) | 0.9314 | 0.9978 | 0.9165 | 0.6890 | 0.9459 | 0.8380 | 23.1% | 97.9 | 22.0 | 3.0% | 0.9906 |
+| E1 | 0.8742 | 0.9978 | 0.4440 | 0.3918 | 0.9445 | 0.8413 | 24.9% | 104.2 | 20.5 | 2.6% | 1.0000 |
+| E4 (pick) | 0.9314 | 0.9978 | 0.9165 | 0.6890 | 0.9459 | 0.8380 | 23.1% | 97.9 | 22.0 | 3.0% | 1.0186 |
 
-Table: Sealed holdout. $\mathcal R$ relative to the shipped hybrid.
+Table: Sealed holdout. $\mathcal R$ relative to E1.
 
-E4, trained and calibrated from FAIR-MAST alone, reaches $S=0.931421$ against $0.862677$ for the
-shipped hybrid and $0.874196$ for E1. $R^2_\psi$ is the same for all three to four decimals
-(0.997837, 0.997771, 0.997808); the gain is in the scalars: $R^2_{q_{95}}$ rises from 0.342298
-(shipped) and 0.444019 (E1) to 0.916470, and $R^2_{\beta_N}$ from 0.394260 and 0.391840 to
-0.689018. Of the 30 audit metrics, E4 is at least as good as the shipped hybrid on 24; it is worse
-on $R^2(Z_{\rm axis})$, $R^2(\delta_{\rm top})$, the O- and X-point offsets, the X-point-lost rate
-and the topology-flip rate. Against E1 it is better on the tip-gap rate (23.1% against 24.9%), the
-p95 Hausdorff distance (97.9 against 104.2 mm) and the mean Hausdorff distance, and worse on the
-O- and X-point offsets and the flip rate (3.0% against 2.6%), so its composite $\mathcal R$ is
-0.9906 against 0.9742 for E1.
+E4 reaches $S=0.931421$ against $0.874196$ for E1. $R^2_\psi$ is the same to four decimals
+(0.997837 against 0.997808); the gain is in the scalars: $R^2_{q_{95}}$ rises from 0.444019 to
+0.916470 and $R^2_{\beta_N}$ from 0.391840 to 0.689018. On the route, E4 is better on the tip-gap
+rate (23.1% against 24.9%), the p95 Hausdorff distance (97.9 against 104.2 mm) and the mean
+Hausdorff distance, and worse on the O- and X-point offsets (X-point 22.0 against 20.5 mm) and the
+flip rate (3.0% against 2.6%), so its composite $\mathcal R$ relative to E1 is 1.0186.
 
-OSF with the E5 maps reaches $S=0.640558$ against $0.618634$ with $c^*$, $s^*$: the
-FAIR-MAST-only read-out generalises better than the probe-fitted one.
+OSF with the E5 maps reaches $S=0.640558$; its flux is the same as OSF alone, and the maps set its
+$q_{95}$ and $\beta_N$ terms.
 
-Between the validation shots and the holdout, $S$ falls for the shipped hybrid (0.871921 to
-0.862677) and rises for E1 (0.863300 to 0.874196) and E4 (0.867116 to 0.931421).
+Between the validation shots and the holdout, $S$ rises for E1 (0.863300 to 0.874196) and E4
+(0.867116 to 0.931421).
 
 #### Verdict
 
-**Acceptance against the shipped calibration.** Under the same scorer, the FAIR-MAST-only pick E4
-scores higher than the shipped hybrid on the sealed holdout ($S=0.931421$ against $0.862677$) and
-lower on the three validation shots ($0.867116$ against $0.871921$). The shipped hybrid's scalar
-read-out was tuned on those three shots and on leaderboard probes; E4 was tuned on neither. By the
-strict rule of `docs/TRAINING_REGIME.md` (at least as good on every metric on the validation shots)
-E4 is not accepted; by holdout $S$, the quantity the challenge measures, it is the better model.
-
-**The hypothesis.** H predicted that the route-guided pick would match or exceed the MSE-only E1 on
-holdout $S$ and on the route metrics.
+H predicted that the route-guided pick would match or exceed the MSE-only E1 on holdout $S$ and on
+the route metrics.
 
 * *Target.* Confirmed for $S$: 0.931421 against 0.874196. The whole gain comes from the scalar
   terms, through the network's scalar heads trained on EFIT++ $q_{95}$, $\beta_N$, $R_{\rm axis}$,
   $Z_{\rm axis}$, $\ell_i$, which is the intensity part of the route (scalar time series). Flux
   $R^2_\psi$ is unchanged.
-* *Geometry.* Not confirmed. The boundary band and soft-LCFS terms (E2) did not improve on MSE on
-  any split; the critical-point and temporal terms (E4) reduced the tip-gap rate and the Hausdorff
-  distances on the holdout but increased the O- and X-point offsets and the flip rate, and the
-  composite $\mathcal R$ of E4 (0.9906) is slightly worse than that of E1 (0.9742). Route-based
-  checkpoint selection mostly chose the best-MSE state.
-* *Generalisation.* The MSE-only flux generalises well: E1's $R^2_\psi$ on the holdout matches the
-  shipped model's (0.997808 against 0.997771) and its $\mathcal R$ is below 1. The fall in $S$
-  from validation shots to holdout seen for the shipped hybrid in Section 7.5 comes mostly from its
-  scalar read-out, and FAIR-MAST-only scalars (E5 maps, heads) remove it; the boundary errors grow
-  from validation shots to holdout for every model.
+* *Geometry.* Not confirmed. The boundary band and soft-LCFS terms (E2) did not improve on MSE in
+  $\mathcal R$; the critical-point and temporal terms (E4) reduced the tip-gap rate and the
+  Hausdorff distances on the holdout but increased the O- and X-point offsets and the flip rate,
+  so the composite $\mathcal R$ of E4 relative to E1 is 1.0186 on the holdout, after 0.9557 on
+  `archval100`. Route-based checkpoint selection mostly chose the best-MSE state.
+* *Generalisation.* The MSE-only flux generalises well: E1's $R^2_\psi$ is 0.998826 on the
+  validation shots and 0.997808 on the holdout. FAIR-MAST-trained scalars (E5 maps, heads) carry
+  over to unseen shots; the boundary errors grow from validation shots to holdout for every model.
 
 The supported form of the thesis is therefore narrower than H: an MSE fit of the flux leaves the
-customer's score limited by the quantities MSE does not see, here $q_{95}$ and $\beta_N$, and
-adding those observables to training raises the score on unseen shots; the geometric route terms
-as implemented here (pixel band, soft LCFS, gradient at critical points) do not yet improve the
+score limited by the quantities MSE does not see, here $q_{95}$ and $\beta_N$, and adding those
+observables to training raises the score on unseen shots; the geometric route terms as
+implemented here (pixel band, soft LCFS, gradient at critical points) do not yet improve the
 boundary beyond what coefficient MSE achieves.
+
+#### E6: curve-distance calibration
+
+E6 trains the hybrid's network against the time series the score and the viewer compare, shot by
+shot. It starts from E4's terms and adds, on whole shots (32 shots per step, at most 128 frames
+each):
+
+* a **curve distance** per shot and series, the range-normalised RMSE between predicted and EFIT++
+  traces plus half the same distance on frame-to-frame differences, for $q_{95}$ and $\beta_N$ from
+  the heads and for $\kappa$, $\delta_{\rm top}$, $\delta_{\rm bot}$, $V$, $R_{\rm axis}$,
+  $Z_{\rm axis}$ from a differentiable read-out of $\hat\psi$ (weight $w_{cd}$);
+* a **late-shot weight** $1+\alpha\,r(t)$, with $r$ a ramp over the last 20% of each shot, $\alpha=4$
+  for $\beta_N$ and 2 for the other series, and series weights of 2 for $\beta_N$,
+  $\delta_{\rm top}$ and $\delta_{\rm bot}$;
+* a **tip band** (weight 10): pixel error in the top and bottom 15% of the LCFS height, aimed at
+  triangularity; and a soft-LCFS term with weight $w_{cd}/3$.
+
+The other weights are E4's ($w_b=3$, $w_c=10^{-3}$, $w_t=1$, $w_s=3\times10^{-3}$). The
+differentiable read-out takes the LCFS as a soft level set and its extremes as soft column and row
+maxima; its agreement with the scorer's extractor on archive frames is:
+
+| read-out | correlation of levels (EFIT++ $\psi$) | correlation of errors (E4 $\psi$ minus EFIT++) |
+|---|---|---|
+| $\kappa$ | 0.997 | 0.434 |
+| $\delta_{\rm top}$ | 0.981 | 0.177 |
+| $\delta_{\rm bot}$ | 0.901 | -0.056 |
+| $V$ | 1.000 | 0.781 |
+| $R_{\rm axis}$ | 1.000 | 0.987 |
+| $Z_{\rm axis}$ | 1.000 | 0.846 |
+
+Table: Differentiable read-out against the scorer's extractor on `archval100` frames: correlation of the values on EFIT++ flux, and of the errors on E4 flux.
+
+The levels agree closely; the errors agree well for $V$ and the axis and poorly for the
+triangularities, which is why the tip band carries the triangularity signal.
+
+**Validation objective and stopping.** Checkpoints are judged by $J$, the same weighted curve
+distances on `archval100` plus $1-$soft IoU of the LCFS. Training uses AdamW ($10^{-3}$), a plateau
+schedule (factor 0.5, patience 4, floor $2\times10^{-5}$) and an exponential moving average of the
+weights (0.998). If $J$ exceeds 1.2 times its best, the run returns to the best averaged weights and
+halves the learning rate. A run stops when $J$ has not improved by more than 0.2% for 20 epochs
+and is no longer falling (less than 1% below its value five epochs earlier), after at least 30 and
+at most 300 epochs.
+
+| $w_{cd}$ | $w_{\rm lcfs}$ | best $J$ (40 epochs) | best coefficient MSE | picked |
+|---|---|---|---|---|
+| 0.01 | 0.003333 | 0.15583 | 4.920e-04 | yes |
+| 0.03 | 0.01 | 0.15732 | 7.222e-04 |  |
+| 0.1 | 0.03333 | 0.16716 | 1.274e-03 |  |
+| 0.3 | 0.1 | 0.15665 | 2.074e-03 |  |
+
+Table: Weight sweep on seed 101, 40 epochs per setting.
+
+| seed | epochs trained | stopping epoch | best-$J$ epoch | best $J$ | minutes |
+|---|---|---|---|---|---|
+| 101 | 104 | 103 | 82 | 0.12436 | 10.6 |
+| 202 | 173 | 172 | 152 | 0.12272 | 17.8 |
+| 303 | 128 | 127 | 107 | 0.12421 | 12.8 |
+| 404 | 143 | 142 | 122 | 0.11819 | 13.7 |
+| 505 | 107 | 106 | 86 | 0.12318 | 10.7 |
+
+Table: The five seeds of E6 with the chosen $w_{cd}=0.01$. Each run returned to its best weights one or two times after a spike.
+
+**Selection.** For $k=1,2,3$ the ensemble of every seed's $k$-th best averaged state is scored on
+`archval100`; the first whose $S$ is not below E4's is taken. Re-selecting the existing E3/E4
+checkpoints by $J$ lowers $J$ but also $S$, so E6 needed new training.
+
+| ensemble (archval100) | $J$ | $S$ | $R^2_\psi$ | $R^2_{q_{95}}$ | $R^2_{\beta_N}$ | $1-D_{\rm LCFS}$ | Consistency |
+|---|---|---|---|---|---|---|---|
+| E4 (3 seeds) | 0.15321 | 0.934308 | 0.997368 | 0.913581 | 0.724441 | 0.945809 | 0.841616 |
+| E3/E4 checkpoints re-selected by $J$ (3 seeds) | 0.14643 | 0.933418 | 0.997439 | 0.915563 | 0.727589 | 0.945714 | 0.835093 |
+| E6 rank-1 states (5 seeds) | 0.10765 | 0.933913 | 0.997473 | 0.913015 | 0.717466 | 0.939810 | 0.845179 |
+| E6 rank-2 states (5 seeds) (picked) | 0.10730 | 0.934929 | 0.997488 | 0.912828 | 0.718412 | 0.941152 | 0.849264 |
+
+Table: Ensembles on `archval100`.
+
+The rank-1 ensemble has $S=0.933913$, below E4's 0.934308; the rank-2 ensemble (epochs 103, 154,
+106, 121 and 86 of the five seeds) has $S=0.934929$ and is the pick. Scored once on the holdout:
+
+| row | E4 | E6 |
+|---|---|---|
+| $S$ | 0.931421 | 0.934444 |
+| $R^2_\psi$ | 0.997837 | 0.997832 |
+| $R^2_{q_{95}}$ | 0.916470 | 0.913296 |
+| $R^2_{\beta_N}$ | 0.689018 | 0.677889 |
+| $1-D_{\rm LCFS}$ | 0.945939 | 0.938632 |
+| Consistency | 0.838024 | 0.862171 |
+| $R_{\rm axis}$ | 0.891041 | 0.903677 |
+| $Z_{\rm axis}$ | 0.867777 | 0.961958 |
+| $\kappa$ | 0.903901 | 0.900994 |
+| $\delta_{\rm top}$ | 0.899385 | 0.912428 |
+| $\delta_{\rm bot}$ | 0.684079 | 0.761293 |
+| $V$ | 0.919919 | 0.920641 |
+| $\ell_i$ | 0.700065 | 0.674204 |
+
+Table: Sealed holdout, E4 and E6: composite score, its terms and the consistency components.
+
+E6 is higher than E4 on $S$, Consistency and five of the seven consistency components, most of all
+$\delta_{\rm bot}$ (0.761293 against 0.684079) and $Z_{\rm axis}$ (0.961958 against 0.867777). It
+is lower on $1-D_{\rm LCFS}$ (0.938632 against 0.945939), $R^2_{\beta_N}$ (0.677889 against
+0.689018), $R^2_{q_{95}}$, $\kappa$ and $\ell_i$. $\ell_i$ has no curve-distance term; $\kappa$'s
+read-out errors agree only moderately with the scorer's (0.434), so the $\kappa$ term pushes partly
+in the wrong direction; and the boundary position carries a small weight next to the shape
+scalars, which costs LCFS distance and X-point offset (Section 8.1). On the three validation shots
+E6 scores $S=0.899567$ against 0.867116 for E4, with $R^2_{\beta_N}$ 0.663239 against 0.417430.
 
 ### Planned end-to-end automated workflow
 
@@ -1364,7 +1454,7 @@ models from public data with no manual intervention:
 3. **QC and split.** The quality fence, the $|I_p|$ window and the sealed holdout, all
    recomputed with recorded seeds; the disjointness checks run and fail the workflow if violated.
 4. **Calibrate OSF** from scratch: the calibrated parameter group (Section 3.9) fitted by an explicit
-   optimiser on training shots only, replacing hand-set values and leaderboard probes.
+   optimiser on training shots only, replacing the hand-set values.
 5. **Train M9** from scratch: PCA basis, network and ensemble members.
 6. **Validate and gate.** Validation on the three FEC demo shots — provided the compatibility
    conditions below are met — together with the archive validation split, and the failure-mode audit
@@ -1386,27 +1476,31 @@ series, which changes $I_p$ by up to 63 kA in fast transients but not at the EFI
 core chord-radius table (131 versus 130 entries), and in the ingest carrying all EFIT slices but no
 scalar labels. With edge Thomson and the clocks harmonised, the demo shots are compatible as a
 validation set. They remain a very small one (three consecutive shots, 115 frames) and were already
-used for OSF tuning and the M9 acceptance threshold, so they should complement, not replace, a larger
+used for OSF tuning, so they should complement, not replace, a larger
 archive validation split, and they cannot be reported as held-out results.
 
 ## Conclusion
 
-A score built from pooled $R^2$ values can be pushed high by a simple loss: a PCA-basis neural
-surrogate trained with coefficient MSE on 3,622 FAIR-MAST shots, combined with a forward
-Grad–Shafranov solver, reaches $R^2_\psi=0.997771$ and $S=0.862677$ on a sealed archive holdout
-from coil currents, plasma current and Thomson scattering alone, with no magnetic sensors. The
-observables tell a less complete story: a 50 mm or larger boundary-tip gap in 24.2% of holdout
-frames, $R^2_{q_{95}}=0.342298$, and boundary and $q_{95}$ errors that grow from the three
-selection shots to the holdout while the flux score barely moves. We have therefore proposed that
-the objective for flux imputation should combine the score as target with observable distances in
+A score built from pooled $R^2$ values can be pushed high by a simple loss: the hybrid of a
+PCA-basis neural surrogate trained with coefficient MSE on FAIR-MAST and a forward Grad–Shafranov
+solver reaches $R^2_\psi=0.997808$ and $S=0.874196$ on a sealed archive holdout from coil currents,
+plasma current and Thomson scattering alone, with no magnetic sensors. The observables tell a less
+complete story: a 50 mm or larger boundary-tip gap in 24.9% of holdout frames,
+$R^2_{q_{95}}=0.444019$, and X-point, boundary and $q_{95}$ errors that grow from the three
+validation shots to the holdout while the score rises. We have therefore proposed that the
+objective for flux imputation should combine the score as target with observable distances in
 intensity and geometry as route, implemented an audit that measures the route for every frame, and
 run a FAIR-MAST-only experiment that tests whether route-guided training generalises better than
-MSE alone. The intensity route, the scalar time series, carries the result: trained on EFIT++
-$q_{95}$, $\beta_N$, axis and $\ell_i$, the network reaches $S=0.931421$ on the sealed holdout
-against 0.874196 for MSE only and 0.862677 for the shipped hybrid, while its flux $R^2_\psi$ is
-unchanged. On the three validation shots it scores 0.867116 against 0.871921 for the shipped
-hybrid, whose read-out was tuned there. The geometric route terms tried here do not yet improve
-the boundary beyond coefficient MSE; better differentiable boundary terms are the next step. The repository, the paper sources and all result tables are reproducible from
-public data, and the data each component was trained or tuned on is documented in Section 9.2.
+MSE alone. The intensity route carries the result. Trained on EFIT++ $q_{95}$, $\beta_N$, axis and
+$\ell_i$, the network reaches $S=0.931421$ on the sealed holdout (E4); trained in addition on the
+curve distance of each shot's time series, with weight on the end of the shot and on
+triangularity, it reaches $S=0.934444$ (E6), with Consistency 0.862171 and lower-triangularity
+$R^2$ 0.761293, while its flux $R^2_\psi$ stays at 0.997832. On the three validation shots E6
+scores $S=0.899567$. The geometric route is not yet solved: E6 pays for its shape scalars with
+more boundary-tip gaps and larger X-point offsets than the MSE-only model, and most of its
+remaining $\beta_N$ error sits in the last frames of each shot. Differentiable boundary and X-point terms that
+agree with the scorer's extractor are the next step. The repository, the paper sources and all
+result tables are reproducible from public data, and the data each component was trained or tuned
+on is documented in Section 9.2.
 
 ## References

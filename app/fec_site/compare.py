@@ -4,7 +4,7 @@
   panels), O-point and X-points (saddles of each map), with per-frame R²ψ and D_LCFS.
 * Scalar traces and per-frame boundary / point metrics come from the observable audit
   (``pipeline.audit``) of each prediction file, ``outputs/audit/<tag>/frames.csv``:
-  q95, βN (the submitted values) and κ, δ_top, δ_bot, V, ℓi, R_axis, Z_axis derived from each ψ map
+  q95, βN (the predicted values) and κ, δ_top, δ_bot, V, ℓi, R_axis, Z_axis derived from each ψ map
   with the scorer's own extractors; LCFS Hausdorff, tip gap, O/X-point offsets, flips, tags.
   ``scripts/make_compare_preds.py`` writes the E6 predictions and both audits.
 Nothing is written by the viewer.

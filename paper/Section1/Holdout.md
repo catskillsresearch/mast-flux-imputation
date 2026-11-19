@@ -8,18 +8,17 @@ $$
 \mathcal P = (\mathcal K\setminus\mathcal D)\setminus\mathcal S,\quad |\mathcal P| = 3655,
 $$
 
-with `random.Random(42).shuffle`. Quality control on $\mathcal P$ keeps 3,622 shots
-($\mathcal Q$) and quarantines 33. `data/fair_mast/make_holdout.py` recomputes the split and checks
+with `random.Random(42).shuffle`. Quality control on $\mathcal P$ keeps the set $\mathcal Q$
+(Section 4). `data/fair_mast/make_holdout.py` recomputes the split and checks
 
 | check | result |
 |---|---|
 | recomputed $\mathcal P$ equals the QC training set (keep ∪ quarantine) | true (3,655) |
-| QC keep list equals the shipped `mast_qc_keep.txt` | true (3,622) |
 | $\mathcal Q\cap\mathcal S$, $\mathcal P\cap\mathcal S$, $\mathcal D\cap\mathcal S$ | ∅, ∅, ∅ |
 | quarantined sealed shot | 27373 ∈ $\mathcal S$ |
 
-and every M9 checkpoint records `seed = 42`, `train_shots = 3622`. The holdout is therefore
-disjoint from all M9 training and validation data.
+and every M9 training run uses the same seed-42 split. The holdout is therefore disjoint from all
+M9 training and validation data.
 
 **FEC-protocol cut.** Each sealed shot is restricted to its diverted EFIT slices with the FEC rule;
 inputs keep their full clocks. Fifteen sealed shots have no diverted slice (24901, 26506, 29932,
@@ -29,5 +28,6 @@ the ingest is overlaid from `aye` (60 of 65 shots).
 
 Fourteen of the fifteen excluded shots are no-plasma shots (Section 2.2); the fifteenth is 24876.
 
-**Caveat.** OSF was not fitted to these shots' labels, but its global scalar factors were tuned
-against aggregate scores on an external MAST test set (Section 9).
+**Caveat.** OSF was not fitted to these shots' labels, but some of its hand-set values were chosen
+with reference to aggregate scores on the FEC public-test fold (Section 5.3), which may share shots
+with the archive.

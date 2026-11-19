@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Audit tables for the paper, derived ONLY from saved ``pipeline.audit`` summaries.
 
-Inputs (read-only): ``outputs/audit/{demo,holdout}_{hybrid,osf}_shipped/summary.json`` written by
-``python -m pipeline.audit run``. Output: ``paper/generated/audit_*.md`` (@imported by the paper).
+Inputs (read-only): ``outputs/audit/exp_E1_{demo,holdout}_hybrid`` (MSE-only hybrid) and ``exp_E5_{demo,holdout}_osf`` written by
+``python -m experiments.driver``. Output: ``paper/generated/audit_*.md`` (@imported by the paper).
 
     .venv/bin/python scripts/make_audit_tables.py
 """
@@ -18,7 +18,8 @@ from pipeline.paths import output_dir  # noqa: E402
 
 GEN = REPO / "paper" / "generated"
 RUNS = [("demo", "hybrid"), ("holdout", "hybrid"), ("demo", "osf"), ("holdout", "osf")]
-HEAD = {"hybrid": "M9 + OSF", "osf": "OSF"}
+HEAD = {"hybrid": "M9 + OSF (E1)", "osf": "OSF"}
+TAG = {"hybrid": "exp_E1_{s}_hybrid", "osf": "exp_E5_{s}_osf"}
 
 # (key, label, kind) kind: f = 6 decimals, mm = 1 decimal, pct = percent with 1 decimal
 TARGET = [("S", "$S$", "f"), ("R2_psi", "$R^2_\\psi$", "f"), ("R2_q95", "$R^2_{q_{95}}$", "f"),
@@ -56,13 +57,13 @@ def table(rows, runs, data):
 def main() -> int:
     data = {}
     for s, m in RUNS:
-        p = output_dir() / "audit" / f"{s}_{m}_shipped" / "summary.json"
+        p = output_dir() / "audit" / TAG[m].format(s=s) / "summary.json"
         data[(s, m)] = json.loads(p.read_text())
     GEN.mkdir(parents=True, exist_ok=True)
     (GEN / "audit_target.md").write_text(table(TARGET, RUNS, data))
     (GEN / "audit_route.md").write_text(table(ROUTE, RUNS, data))
     n = {r: (data[r]["n_shots"], data[r]["n_frames"]) for r in RUNS}
-    (GEN / "audit_facts.json").write_text(json.dumps({f"{s}_{m}": v for (s, m), v in n.items()}) + "\n")
+    (GEN / "audit_facts.json").write_text(json.dumps({f"{m}_{s}": v for (s, m), v in n.items()}) + "\n")
     print("wrote", *(p.name for p in sorted(GEN.glob("audit_*"))))
     return 0
 

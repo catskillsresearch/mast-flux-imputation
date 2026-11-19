@@ -35,8 +35,9 @@ Fallback $q^\*=5a^2|B_t|/(R_0 I_p)$.
 $R\in[r_{\rm in},r_{\rm out}]$ of the LCFS; clip $[0.2,4]$, 7-frame median, $\times(1-0.2w)$,
 $\times s_\beta$ ($=1$); fallback 1.3.
 
-**Hybrid scalars.** $q\leftarrow\mathrm{clip}(q\,c^\*/1.20,2,25)$, $\beta_N\leftarrow\mathrm{clip}(\beta_N s^\*,0.2,5)$,
-$c^\*=1.062242$, $s^\*=1.078508$.
+**Hybrid scalars.** MSE-only form (E1, E2): $q\leftarrow\mathrm{clip}(a_q q+b_q,2,25)$,
+$\beta_N\leftarrow\mathrm{clip}(a_b\beta_N+b_b,0.2,5)$ with $a_q=0.626$, $b_q=1.957$, $a_b=1.013$,
+$b_b=0.093$ fitted on FAIR-MAST (E5). From E3 on, $q_{95}$ and $\beta_N$ come from the M9 scalar heads.
 
 ## M9
 
