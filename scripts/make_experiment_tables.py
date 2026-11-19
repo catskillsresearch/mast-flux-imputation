@@ -97,6 +97,10 @@ def main() -> int:
             ep = s.get("best_mse_epoch", s.get("epoch"))
             out.append(f"| {E} | {s['seed']} | {s['pick']} | {fmt(rr.get(s['pick']), 'r')} | {ep} |")
     (GEN / "exp_members.md").write_text("\n".join(out) + "\n")
+    # diagnostic: experiment psi with the shipped OSF scalar read-out (scripts/demo_same_scalars.py)
+    rows = [("shipped M9 + OSF", "demo_hybrid_shipped")] + [(names[E] + ", shipped scalars", f"exp_{E}_demo_psi_shipscal")
+                                                           for E in ex]
+    (GEN / "exp_demo_shipscal.md").write_text(table(rows, summ("demo_hybrid_shipped")))
     # holdout
     hp = EXP / "holdout" / "result.json"
     if hp.is_file():

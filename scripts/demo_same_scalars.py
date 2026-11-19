@@ -13,7 +13,12 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 from experiments.driver import pred_audit  # noqa: E402
 
-for E in sys.argv[1:]:
-    files = json.loads((REPO / "outputs/experiments" / E / "members.json").read_text())["files"]
-    s = pred_audit("demo", f"exp_{E}_demo_psi_shipscal", members=[Path(f) for f in files], scalars="osf_shipped")
-    print(E, "S", s["S"], "R2_psi", s["R2_psi"], "R2_q95", s["R2_q95"])
+def main():
+    for E in sys.argv[1:]:
+        files = json.loads((REPO / "outputs/experiments" / E / "members.json").read_text())["files"]
+        s = pred_audit("demo", f"exp_{E}_demo_psi_shipscal", members=[Path(f) for f in files], scalars="osf_shipped")
+        print(E, "S", s["S"], "R2_psi", s["R2_psi"], "R2_q95", s["R2_q95"])
+
+
+if __name__ == "__main__":
+    main()
