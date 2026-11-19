@@ -112,7 +112,7 @@ def extract_lcfs_with_sign(psi: np.ndarray, R: np.ndarray, Z: np.ndarray, machin
     though R2_psi was 0.913. Hence the fold-global sign: convention is decided from the pooled
     flux residual, which is robust, and then imposed here.
 
-    Pinning the sign does NOT tighten scoring for a correctly-signed submission, i.e. it costs
+    Fixing the sign does NOT tighten scoring for a correctly-signed submission, i.e. it costs
     nobody the fallback they used to get. Swept over 413 frames per machine at noise levels
     0/0.1/0.3/0.6/1.0 x std(psi), the machine's own orientation succeeded on EVERY frame -- the
     fallback never fired on a correctly-signed map, so removing it there is a no-op. Confirmed

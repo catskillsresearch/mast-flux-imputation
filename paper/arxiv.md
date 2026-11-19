@@ -26,7 +26,7 @@ flux $\psi(R,Z)$ on a $65\times65$ grid, with $q_{95}$ and $\beta_N$, from poloi
 currents, plasma current, toroidal-field current and midplane Thomson scattering, with no magnetic
 probe or flux-loop input. Two models minimise different parts of the objective: OSF, a
 free-boundary Grad–Shafranov forward solver over the 812-element MAST coil set, and M9, a PCA-basis
-neural surrogate (not physics-informed) trained with coefficient MSE on 3,622 FAIR-MAST archive
+neural surrogate trained with coefficient MSE on 3,622 FAIR-MAST archive
 shots. On a sealed, seed-42 FAIR-MAST holdout disjoint from M9 training (65 shots, 3,449 diverted
 frames), OSF reaches $S=0.618634$ and the hybrid M9 + OSF $S=0.862677$ with
 $R^2_\psi=0.997771$. Yet the same hybrid has a top or bottom boundary-tip gap of at least 50 mm in
@@ -101,8 +101,7 @@ beyond coefficient MSE.
    Grad–Shafranov forward solver driven by measured currents, separating machine constants from the
    38 calibrated parameters (Section 3).
 4. An exact description of M9 (`M9_win50`), an ensemble of three PCA-basis neural surrogates of
-   EFIT++ flux trained on FAIR-MAST [@jackson2024fairmast] with coefficient MSE; it is not a
-   physics-informed neural network (Section 4).
+   EFIT++ flux trained on FAIR-MAST [@jackson2024fairmast] with coefficient MSE (Section 4).
 5. A reproducible build: data acquisition, ingest, quality control, holdout construction with a
    disjointness proof, training, prediction, scoring and a browser viewer (Section 5), with measured
    results on a sealed holdout re-derived from saved prediction files (Section 8).
@@ -117,8 +116,7 @@ Free-boundary equilibrium solvers based on Green's functions of the Grad–Shafr
 Picard iteration go back to [@lackner1976]; textbook treatments are given by
 [@freidberg1987; @freidberg2014; @jardin2010; @wesson2011]. Neural networks have been used as
 Grad–Shafranov solvers [@vanmilligen1995] and, constrained by measured magnetic signals, for fast
-reconstruction [@joung2020]. Physics-informed neural networks (PINNs) [@raissi2019] add a PDE
-residual to the training loss; the M9 model below does not. Reduced-order representations of fields
+reconstruction [@joung2020]. Reduced-order representations of fields
 by principal component analysis / proper orthogonal decomposition
 [@pearson1901; @hotelling1933; @berkooz1993] underlie the M9 output space.
 
@@ -139,7 +137,7 @@ not subset, so `efit_times` is not contiguous.
 
 The three labelled shots of the FEC starter kit [@fec2026starter], 28348, 28350 and 28351 (36, 42
 and 37 diverted frames), are the validation shots. They are fetched with
-`data/fec/fetch.py --demo` (sha256-pinned) and are excluded from the FAIR-MAST training pool, the
+`data/fec/fetch.py --demo` (sha256-verified) and are excluded from the FAIR-MAST training pool, the
 quality-control statistics and the PCA basis.
 
 ### FAIR-MAST archive and ingest
@@ -480,22 +478,21 @@ in the hybrid mode $q_{95}$ and $\beta_N$ come from OSF.
 
 ![M9 architecture: measured inputs are augmented in time, passed through two residual encoders joined by a zero-initialised gate, mapped linearly to 60 PCA coefficients and reconstructed to the $65\times65$ grid; three seeds are averaged.](figures/diag_m9_arch.png){#fig:m9}
 
-### What M9 is, and is not
+### Model and loss
 
-The training script of the source repository is named `run_crc_feq_pinn_mast.py`, and the model was
-informally called a "PCA-PINN". It is not a physics-informed neural network in the sense of
-[@raissi2019]: the loss is the mean-squared error between predicted and EFIT++ PCA coefficients,
+M9 is a PCA basis of EFIT++ flux combined with an ensemble of three residual multilayer
+perceptrons that map the measured inputs to the 60 PCA coefficients. The shipped members are
+trained with the mean-squared error between predicted and EFIT++ coefficients,
 
 $$
 \mathcal L(\theta) = \frac{1}{|B|}\sum_{t\in B}\frac{1}{60}\big\|f_\theta(\tilde x_t) - z_t\big\|_2^{2},
-\qquad z_t = C\,(\psi^{\rm EFIT}_t-\mu),
+\qquad z_t = C\,(\psi^{\rm EFIT}_t-\mu).
 $$
 
-with no Grad–Shafranov residual, boundary condition or conservation term. Any physics in the output
-is inherited from the EFIT++ training targets and from the PCA subspace they span. We therefore call
-M9 a *PCA-basis neural surrogate*; the "pinn" in the file name is legacy. The network also carries
-five scalar heads ($q_{95}$, $\beta_N$, $R_{\rm axis}$, $Z_{\rm axis}$, $\ell_i$) that receive no loss
-and are kept only so that the shipped state dictionaries load.
+The physical structure of the output comes from the EFIT++ training targets and from the PCA
+subspace they span. The network also has five scalar heads ($q_{95}$, $\beta_N$, $R_{\rm axis}$,
+$Z_{\rm axis}$, $\ell_i$). In the shipped members they carry no loss; in experiments E3 and E4
+(Section 10.6) they are trained on EFIT++ labels and supply $q_{95}$ and $\beta_N$.
 
 ### PCA basis of EFIT++ flux
 
@@ -619,8 +616,8 @@ prediction/evaluation stages.
 ![Model build and calibration pipeline of the repository. Dashed edges carry labels used only for evaluation; the dotted edge marks the demo shots inspected during OSF calibration.](figures/diag_pipeline.png){#fig:pipeline}
 
 Labels enter in exactly three places: the M9 PCA basis and loss (archive training pool), the
-holdout ground truth (sealed shots, evaluation only), and — informally — the OSF calibration
-(next note).
+holdout ground truth (sealed shots, evaluation only), and the OSF calibration, which used the
+three demo shots (next note).
 
 ### How OSF was calibrated
 
@@ -985,14 +982,12 @@ With only three shots, the pooled $R^2$ of a scalar with little between-shot var
 extreme: $R^2(Z_{\rm axis})=-60.084051$ for M9 + OSF results from a tiny $\mathrm{SS}_{\rm tot}$, not
 from a large error. Demo-shot scores overstate holdout performance for the scalars.
 
-### Relation to the training-log figure
+### All-slice flux score
 
-The M9 training log reports a "sealed $R^2$" of about 0.378. That figure is a pixel $R^2$ pooled over
-*all* 8,161 EFIT slices of the 80 sealed shots — ramp-up, limited and ramp-down phases included —
-and it contains shot 27373, quarantined from training as a QC outlier. Recomputed with the shipped
-ensemble it is 0.378687, and 0.733818 without shot 27373. On the FEC protocol (diverted slices only)
-the same ensemble gives the 0.997771 above. The difference is the frame population, not a different
-model.
+Pooled over *all* 8,161 EFIT slices of the 80 sealed shots — ramp-up, limited and ramp-down phases
+included — the shipped ensemble has a pixel $R^2$ of 0.378687, and 0.733818 without shot 27373, a
+QC outlier excluded from training. On the FEC protocol (diverted slices only) the same ensemble
+gives the 0.997771 above. The difference is the frame population, not a different model.
 
 ## Reproducibility and limitations
 
@@ -1124,7 +1119,7 @@ The audit turns inspection into training signal:
    classes, in place of uniform shot-balanced sampling;
 2. **Route terms in the loss** beyond MSE on PCA coefficients: LCFS-distance, X-point and
    $\kappa$/$\delta$ penalties evaluated through differentiable surrogates of the quantities in
-   Eq. \eqref{eq:route-geometry}, which would also be the first physics-informed element of M9;
+   Eq. \eqref{eq:route-geometry};
 3. **A checkpoint gate** defined by route quantities and failure-class rates on a fixed archive
    validation set together with the three validation shots, replacing the current acceptance
    threshold on the three shots alone ($R^2_\psi\ge0.9976$).

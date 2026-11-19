@@ -1,6 +1,6 @@
 """Recreate the M9 sealed-80 holdout and prove it is disjoint from M9 training.
 
-Protocol (catskills_fec ``catskills/run_crc_feq_pinn_mast.py::_split``, unchanged):
+Protocol (catskills_fec M9 training script, ``_split``, unchanged):
 
     keys   = sorted FAIR-MAST ingest shot keys  (== mast_features_v1 index order)
     keys  -= {28348, 28350, 28351}               (the 3 FEC starter-kit demo shots)

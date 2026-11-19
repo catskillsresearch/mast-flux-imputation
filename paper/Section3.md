@@ -6,7 +6,7 @@ in the hybrid mode $q_{95}$ and $\beta_N$ come from OSF.
 
 ![M9 architecture: measured inputs are augmented in time, passed through two residual encoders joined by a zero-initialised gate, mapped linearly to 60 PCA coefficients and reconstructed to the $65\times65$ grid; three seeds are averaged.](figures/diag_m9_arch.png){#fig:m9}
 
-- [What M9 is, and is not](Section3/NotAPINN.md)
+- [Model and loss](Section3/Loss.md)
 - [PCA basis of EFIT++ flux](Section3/PCABasis.md)
 - [Features and temporal context](Section3/Features.md)
 - [Network](Section3/Network.md)

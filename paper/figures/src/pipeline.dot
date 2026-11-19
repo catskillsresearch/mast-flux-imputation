@@ -16,7 +16,7 @@ digraph pipeline {
   pca    [label="PCA basis of EFIT++ psi\nK = 60, randomized SVD"];
   feat   [label="features x in R^308\ntemporal augmentation -> 924"];
   train  [label="M9 training, 3 seeds {101, 202, 303}\nMSE on 60 coefficients, AdamW, 50 epochs\n10% shot validation split"];
-  w      [label="M9 checkpoints (*.pt)\nsha256-pinned", shape=cylinder];
+  w      [label="M9 checkpoints (*.pt)\nsha256-verified", shape=cylinder];
 
   spec   [label="OSF machine spec\ncoil table (812 rows), N_TF, sigma_ax = +1", fillcolor="#e8f3ea"];
   cal    [label="OSF calibrated parameters (38)\ninspection of demo shots +\naggregate leaderboard probes", fillcolor="#e8f3ea"];

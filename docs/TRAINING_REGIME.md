@@ -128,7 +128,7 @@ GPU: RTX 5060 Ti 16 GB. Times are estimates from the smoke run (§8).
 
 Total GPU for E1–E4 ≈ 4–5 h. Run E1 first; do not open the sealed holdout until the final E1-vs-best-B comparison.
 
-## 7. What the earlier MAST runs on the lab drive show
+## 7. MAST development runs on the lab drive
 
 From `results/mast_archive/P36_*.json` (Sept 15 and Oct 30, 2026). "demo" there means the three
 validation shots; "sealed" is pooled over *all* EFIT slices of the sealed 80 (including

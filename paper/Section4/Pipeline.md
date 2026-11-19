@@ -7,5 +7,5 @@ prediction/evaluation stages.
 ![Model build and calibration pipeline of the repository. Dashed edges carry labels used only for evaluation; the dotted edge marks the demo shots inspected during OSF calibration.](../figures/diag_pipeline.png){#fig:pipeline}
 
 Labels enter in exactly three places: the M9 PCA basis and loss (archive training pool), the
-holdout ground truth (sealed shots, evaluation only), and — informally — the OSF calibration
-(next note).
+holdout ground truth (sealed shots, evaluation only), and the OSF calibration, which used the
+three demo shots (next note).

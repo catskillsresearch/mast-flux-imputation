@@ -218,17 +218,17 @@ Consistency components (unclipped pooled $R^2$; the term averages $\max(0,\cdot)
 | OSF | −0.492257 | −0.137536 | −0.069541 | −0.502441 | −0.169103 | −2.645417 | −0.278707 |
 | M9 + OSF | 0.889709 | 0.904550 | 0.893904 | 0.906330 | 0.577001 | 0.904904 | 0.668520 |
 
-For reference only — the 3 FEC demo shots (115 frames) are **not** held out for OSF (its
-calibration notes quote $R^2$ values that can only come from labelled MAST frames, i.e. these):
+For reference only — the 3 FEC demo shots (115 frames) were used in the OSF calibration, so they
+are not held out for OSF:
 
 | FEC demo (3 shots, 115 frames) | S | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency |
 |---|---|---|---|---|---|---|
 | OSF | 0.774217 | 0.982004 | 0.841487 | 0.689767 | 0.876086 | 0.158309 |
 | M9 + OSF | 0.871921 | 0.998555 | 0.818390 | 0.594122 | 0.955503 | 0.606137 |
 
-Why not the M9 training log's "sealed R² = 0.378"? That number is a pixel $R^2$ over **all**
-8,161 EFIT slices of the 80 shots (ramps and limited phases, plus the QC-quarantined outlier shot
-27373). Re-measured here: 0.378687 (0.733818 without 27373).
+Pooled over **all** 8,161 EFIT slices of the 80 sealed shots (ramps and limited phases, plus the
+QC-quarantined outlier shot 27373), the shipped ensemble has a pixel $R^2$ of 0.378687 (0.733818
+without 27373); the difference from 0.997771 is the frame population.
 
 ### 8.1 FAIR-MAST-only retraining (E1–E5)
 

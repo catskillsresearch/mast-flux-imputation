@@ -9,7 +9,7 @@ mermaid, gist-box and appendix machinery removed. Steps:
 3. Strip manual section numbers so LaTeX numbers everything once.
 4. Rewrite pandoc citations ``[@a; @b]`` to ``\cite{a,b}`` (BibTeX, natbib numbers).
 5. pandoc -> LaTeX with ``--shift-heading-level-by=-1`` (``##`` -> ``\section``).
-6. Clean-up: figures pinned [H] and width-capped, PNG -> vector PDF when one exists, labelled
+6. Clean-up: figures placed [H] and width-capped, PNG -> vector PDF when one exists, labelled
    display maths -> ``equation``, References section unnumbered.
 7. Splice preamble + title page (title, author, affiliation, date, abstract, TOC) + body + bibliography.
 """

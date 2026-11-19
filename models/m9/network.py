@@ -1,4 +1,4 @@
-"""M9 trunk + temporal features (from catskills_fec ``catskills/pinn_charcoal.py``).
+"""M9 trunk + temporal features (ported from the catskills_fec M9 trunk module).
 
 Only the pieces the shipped M9 checkpoints use are kept: ``augment_temporal`` (mode
 "smoothdiff"), ``_clip_features`` and the ``dualctx`` trunk ``CoeffDualContext``. Numerics are
@@ -124,7 +124,7 @@ class CoeffDualContext(torch.nn.Module):
         )
 
 
-# Hyper-parameters of the shipped M9 trunk (run_crc_feq_pinn_mast.py).
+# Hyper-parameters of the shipped M9 trunk (catskills_fec M9 training script).
 TRUNK = dict(width=512, blocks=4, ctx_width=512, ctx_blocks=3, dropout=0.05, activation="relu")
 
 

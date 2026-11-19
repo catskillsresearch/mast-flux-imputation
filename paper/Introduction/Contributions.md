@@ -10,8 +10,7 @@
    Grad–Shafranov forward solver driven by measured currents, separating machine constants from the
    38 calibrated parameters (Section 3).
 4. An exact description of M9 (`M9_win50`), an ensemble of three PCA-basis neural surrogates of
-   EFIT++ flux trained on FAIR-MAST [@jackson2024fairmast] with coefficient MSE; it is not a
-   physics-informed neural network (Section 4).
+   EFIT++ flux trained on FAIR-MAST [@jackson2024fairmast] with coefficient MSE (Section 4).
 5. A reproducible build: data acquisition, ingest, quality control, holdout construction with a
    disjointness proof, training, prediction, scoring and a browser viewer (Section 5), with measured
    results on a sealed holdout re-derived from saved prediction files (Section 8).

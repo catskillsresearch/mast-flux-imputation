@@ -8,5 +8,5 @@ not subset, so `efit_times` is not contiguous.
 
 The three labelled shots of the FEC starter kit [@fec2026starter], 28348, 28350 and 28351 (36, 42
 and 37 diverted frames), are the validation shots. They are fetched with
-`data/fec/fetch.py --demo` (sha256-pinned) and are excluded from the FAIR-MAST training pool, the
+`data/fec/fetch.py --demo` (sha256-verified) and are excluded from the FAIR-MAST training pool, the
 quality-control statistics and the PCA basis.

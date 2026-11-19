@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Re-train the M9_win50 trio (port of catskills_fec ``catskills/run_crc_feq_pinn_mast.py`` with the
+"""Re-train the M9_win50 trio (port of the catskills_fec M9 training script with the
 ``phase3_train_mast_m9.py`` flags ``--seed 42 --epochs 50 --qc --shot-balanced --mask-edge --win``).
 
 Pipeline (all numerics as in the original):

@@ -109,7 +109,7 @@
 \maketitle
 \begin{center}\small\textbf{ORCID:} 0000-0001-8299-9361\end{center}
 \begin{abstract}
-A model judged by a composite score can reach a high value of that score with a simple loss, such as mean squared error on a compressed representation of the field, and still fail to reproduce the physical observables the score is meant to summarise. We state the hypothesis that such a model generalises less well than one guided by matching those observables in intensity (the flux field and its scalar time series) and in geometry (the last closed flux surface, O-point and X-points), and we formalise a two-part objective: the \emph{target} is the challenge score; the \emph{route} is a set of observable distances computed frame by frame. The setting is the reconstruction of MAST poloidal flux \(\psi(R,Z)\) on a \(65\times65\) grid, with \(q_{95}\) and \(\beta_N\), from poloidal-field coil currents, plasma current, toroidal-field current and midplane Thomson scattering, with no magnetic probe or flux-loop input. Two models minimise different parts of the objective: OSF, a free-boundary Grad--Shafranov forward solver over the 812-element MAST coil set, and M9, a PCA-basis neural surrogate (not physics-informed) trained with coefficient MSE on 3,622 FAIR-MAST archive shots. On a sealed, seed-42 FAIR-MAST holdout disjoint from M9 training (65 shots, 3,449 diverted frames), OSF reaches \(S=0.618634\) and the hybrid M9 + OSF \(S=0.862677\) with \(R^2_\psi=0.997771\). Yet the same hybrid has a top or bottom boundary-tip gap of at least 50 mm in 24.2\% of frames, \(R^2=0.577001\) for lower triangularity and \(R^2=0.342298\) for \(q_{95}\); between the three validation shots used for model selection and the holdout its flux score barely moves while its boundary and \(q_{95}\) errors grow. An automated observable audit measures the route for every frame, and a FAIR-MAST-only training regime compares MSE-only and observable-guided training on the same data and holdout. Adding the scalar observables to training raises holdout \(S\) from 0.874196 (MSE only) to 0.931421, above the shipped hybrid, with no use of challenge labels or leaderboard probes; the geometric route terms tried (boundary band, soft LCFS, critical points) do not improve the boundary beyond coefficient MSE.
+A model judged by a composite score can reach a high value of that score with a simple loss, such as mean squared error on a compressed representation of the field, and still fail to reproduce the physical observables the score is meant to summarise. We state the hypothesis that such a model generalises less well than one guided by matching those observables in intensity (the flux field and its scalar time series) and in geometry (the last closed flux surface, O-point and X-points), and we formalise a two-part objective: the \emph{target} is the challenge score; the \emph{route} is a set of observable distances computed frame by frame. The setting is the reconstruction of MAST poloidal flux \(\psi(R,Z)\) on a \(65\times65\) grid, with \(q_{95}\) and \(\beta_N\), from poloidal-field coil currents, plasma current, toroidal-field current and midplane Thomson scattering, with no magnetic probe or flux-loop input. Two models minimise different parts of the objective: OSF, a free-boundary Grad--Shafranov forward solver over the 812-element MAST coil set, and M9, a PCA-basis neural surrogate trained with coefficient MSE on 3,622 FAIR-MAST archive shots. On a sealed, seed-42 FAIR-MAST holdout disjoint from M9 training (65 shots, 3,449 diverted frames), OSF reaches \(S=0.618634\) and the hybrid M9 + OSF \(S=0.862677\) with \(R^2_\psi=0.997771\). Yet the same hybrid has a top or bottom boundary-tip gap of at least 50 mm in 24.2\% of frames, \(R^2=0.577001\) for lower triangularity and \(R^2=0.342298\) for \(q_{95}\); between the three validation shots used for model selection and the holdout its flux score barely moves while its boundary and \(q_{95}\) errors grow. An automated observable audit measures the route for every frame, and a FAIR-MAST-only training regime compares MSE-only and observable-guided training on the same data and holdout. Adding the scalar observables to training raises holdout \(S\) from 0.874196 (MSE only) to 0.931421, above the shipped hybrid, with no use of challenge labels or leaderboard probes; the geometric route terms tried (boundary band, soft LCFS, critical points) do not improve the boundary beyond coefficient MSE.
 \end{abstract}
 \clearpage
 \tableofcontents
@@ -149,7 +149,7 @@ We treat this as a hypothesis. Section 7 defines the objective, and Section 7.5 
 \item
   A complete mathematical description of OSF (\nolinkurl{mast_12_osf_0.0.12}), a free-boundary Grad--Shafranov forward solver driven by measured currents, separating machine constants from the 38 calibrated parameters (Section 3).
 \item
-  An exact description of M9 (\texttt{M9\_win50}), an ensemble of three PCA-basis neural surrogates of EFIT++ flux trained on FAIR-MAST \cite{jackson2024fairmast} with coefficient MSE; it is not a physics-informed neural network (Section 4).
+  An exact description of M9 (\texttt{M9\_win50}), an ensemble of three PCA-basis neural surrogates of EFIT++ flux trained on FAIR-MAST \cite{jackson2024fairmast} with coefficient MSE (Section 4).
 \item
   A reproducible build: data acquisition, ingest, quality control, holdout construction with a disjointness proof, training, prediction, scoring and a browser viewer (Section 5), with measured results on a sealed holdout re-derived from saved prediction files (Section 8).
 \item
@@ -159,7 +159,7 @@ We treat this as a hypothesis. Section 7 defines the objective, and Section 7.5 
 \hypertarget{related-work}{%
 \subsection{Related work}\label{related-work}}
 
-Free-boundary equilibrium solvers based on Green's functions of the Grad--Shafranov operator and Picard iteration go back to \cite{lackner1976}; textbook treatments are given by \cite{freidberg1987,freidberg2014,jardin2010,wesson2011}. Neural networks have been used as Grad--Shafranov solvers \cite{vanmilligen1995} and, constrained by measured magnetic signals, for fast reconstruction \cite{joung2020}. Physics-informed neural networks (PINNs) \cite{raissi2019} add a PDE residual to the training loss; the M9 model below does not. Reduced-order representations of fields by principal component analysis / proper orthogonal decomposition \cite{pearson1901,hotelling1933,berkooz1993} underlie the M9 output space.
+Free-boundary equilibrium solvers based on Green's functions of the Grad--Shafranov operator and Picard iteration go back to \cite{lackner1976}; textbook treatments are given by \cite{freidberg1987,freidberg2014,jardin2010,wesson2011}. Neural networks have been used as Grad--Shafranov solvers \cite{vanmilligen1995} and, constrained by measured magnetic signals, for fast reconstruction \cite{joung2020}. Reduced-order representations of fields by principal component analysis / proper orthogonal decomposition \cite{pearson1901,hotelling1933,berkooz1993} underlie the M9 output space.
 
 \hypertarget{data}{%
 \clearpage
@@ -172,7 +172,7 @@ All training and test data come from the FAIR-MAST archive. The Fusion Equilibri
 
 The output format follows the FEC MAST task \cite{fec2026dataset} (CC BY 4.0): one Parquet row per shot with nested arrays for every time series, the EFIT++ flux on a fixed \(65\times65\) \((R,Z)\) grid, and \(q_{95}\) and \(\beta_N\) at each EFIT time. Only \emph{diverted} EFIT time slices are scored; for MAST a slice is diverted when EFIT++ reports an X-point (\texttt{efm/xpoint\{1,2\}}). The input time series are not subset, so \texttt{efit\_times} is not contiguous.
 
-The three labelled shots of the FEC starter kit \cite{fec2026starter}, 28348, 28350 and 28351 (36, 42 and 37 diverted frames), are the validation shots. They are fetched with \texttt{data/fec/fetch.py\ -\/-demo} (sha256-pinned) and are excluded from the FAIR-MAST training pool, the quality-control statistics and the PCA basis.
+The three labelled shots of the FEC starter kit \cite{fec2026starter}, 28348, 28350 and 28351 (36, 42 and 37 diverted frames), are the validation shots. They are fetched with \texttt{data/fec/fetch.py\ -\/-demo} (sha256-verified) and are excluded from the FAIR-MAST training pool, the quality-control statistics and the PCA basis.
 
 \hypertarget{fair-mast-archive-and-ingest}{%
 \subsection{FAIR-MAST archive and ingest}\label{fair-mast-archive-and-ingest}}
@@ -509,17 +509,17 @@ M9 (\nolinkurl{models/m9}, checkpoints \texttt{CRC\_FEQ\_mast\_M9\_win50\_i\{101
 }
 \end{figure}
 
-\hypertarget{what-m9-is-and-is-not}{%
-\subsection{What M9 is, and is not}\label{what-m9-is-and-is-not}}
+\hypertarget{model-and-loss}{%
+\subsection{Model and loss}\label{model-and-loss}}
 
-The training script of the source repository is named \nolinkurl{run_crc_feq_pinn_mast.py}, and the model was informally called a ``PCA-PINN''. It is not a physics-informed neural network in the sense of \cite{raissi2019}: the loss is the mean-squared error between predicted and EFIT++ PCA coefficients,
+M9 is a PCA basis of EFIT++ flux combined with an ensemble of three residual multilayer perceptrons that map the measured inputs to the 60 PCA coefficients. The shipped members are trained with the mean-squared error between predicted and EFIT++ coefficients,
 
 \[
 \mathcal L(\theta) = \frac{1}{|B|}\sum_{t\in B}\frac{1}{60}\big\|f_\theta(\tilde x_t) - z_t\big\|_2^{2},
-\qquad z_t = C\,(\psi^{\rm EFIT}_t-\mu),
+\qquad z_t = C\,(\psi^{\rm EFIT}_t-\mu).
 \]
 
-with no Grad--Shafranov residual, boundary condition or conservation term. Any physics in the output is inherited from the EFIT++ training targets and from the PCA subspace they span. We therefore call M9 a \emph{PCA-basis neural surrogate}; the ``pinn'' in the file name is legacy. The network also carries five scalar heads (\(q_{95}\), \(\beta_N\), \(R_{\rm axis}\), \(Z_{\rm axis}\), \(\ell_i\)) that receive no loss and are kept only so that the shipped state dictionaries load.
+The physical structure of the output comes from the EFIT++ training targets and from the PCA subspace they span. The network also has five scalar heads (\(q_{95}\), \(\beta_N\), \(R_{\rm axis}\), \(Z_{\rm axis}\), \(\ell_i\)). In the shipped members they carry no loss; in experiments E3 and E4 (Section 10.6) they are trained on EFIT++ labels and supply \(q_{95}\) and \(\beta_N\).
 
 \hypertarget{pca-basis-of-efit-flux}{%
 \subsection{PCA basis of EFIT++ flux}\label{pca-basis-of-efit-flux}}
@@ -640,7 +640,7 @@ The figure below shows the complete build, from public data to scored prediction
 }
 \end{figure}
 
-Labels enter in exactly three places: the M9 PCA basis and loss (archive training pool), the holdout ground truth (sealed shots, evaluation only), and --- informally --- the OSF calibration (next note).
+Labels enter in exactly three places: the M9 PCA basis and loss (archive training pool), the holdout ground truth (sealed shots, evaluation only), and the OSF calibration, which used the three demo shots (next note).
 
 \hypertarget{how-osf-was-calibrated}{%
 \subsection{How OSF was calibrated}\label{how-osf-was-calibrated}}
@@ -1314,10 +1314,10 @@ M9 + OSF & 0.891429 & -60.084051 & 0.901171 & 0.596231 & 0.111411 & 0.809666 & 0
 
 With only three shots, the pooled \(R^2\) of a scalar with little between-shot variance can be extreme: \(R^2(Z_{\rm axis})=-60.084051\) for M9 + OSF results from a tiny \(\mathrm{SS}_{\rm tot}\), not from a large error. Demo-shot scores overstate holdout performance for the scalars.
 
-\hypertarget{relation-to-the-training-log-figure}{%
-\subsection{Relation to the training-log figure}\label{relation-to-the-training-log-figure}}
+\hypertarget{all-slice-flux-score}{%
+\subsection{All-slice flux score}\label{all-slice-flux-score}}
 
-The M9 training log reports a ``sealed \(R^2\)'' of about 0.378. That figure is a pixel \(R^2\) pooled over \emph{all} 8,161 EFIT slices of the 80 sealed shots --- ramp-up, limited and ramp-down phases included --- and it contains shot 27373, quarantined from training as a QC outlier. Recomputed with the shipped ensemble it is 0.378687, and 0.733818 without shot 27373. On the FEC protocol (diverted slices only) the same ensemble gives the 0.997771 above. The difference is the frame population, not a different model.
+Pooled over \emph{all} 8,161 EFIT slices of the 80 sealed shots --- ramp-up, limited and ramp-down phases included --- the shipped ensemble has a pixel \(R^2\) of 0.378687, and 0.733818 without shot 27373, a QC outlier excluded from training. On the FEC protocol (diverted slices only) the same ensemble gives the 0.997771 above. The difference is the frame population, not a different model.
 
 \hypertarget{reproducibility-and-limitations}{%
 \clearpage
@@ -1469,7 +1469,7 @@ The audit turns inspection into training signal:
 \item
   \textbf{Reweighting and targeted sampling} of frames and shots in the over-represented failure classes, in place of uniform shot-balanced sampling;
 \item
-  \textbf{Route terms in the loss} beyond MSE on PCA coefficients: LCFS-distance, X-point and \(\kappa\)/\(\delta\) penalties evaluated through differentiable surrogates of the quantities in Eq. \eqref{eq:route-geometry}, which would also be the first physics-informed element of M9;
+  \textbf{Route terms in the loss} beyond MSE on PCA coefficients: LCFS-distance, X-point and \(\kappa\)/\(\delta\) penalties evaluated through differentiable surrogates of the quantities in Eq. \eqref{eq:route-geometry};
 \item
   \textbf{A checkpoint gate} defined by route quantities and failure-class rates on a fixed archive validation set together with the three validation shots, replacing the current acceptance threshold on the three shots alone (\(R^2_\psi\ge0.9976\)).
 \end{enumerate}

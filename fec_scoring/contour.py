@@ -2,7 +2,7 @@
 
 `find_contours` traces iso-level curves on a 2-D array and returns each as an (N, 2) array of
 fractional (row, col) = (Z-index, R-index) grid coordinates, with closed curves returned with
-identical first/last points. We use scikit-image's marching-squares (pinned in the scoring docker
+identical first/last points. We use scikit-image's marching-squares (the version fixed in the scoring docker
 image and required); if it is somehow missing, we fail loudly rather than silently mis-scoring.
 """
 from __future__ import annotations

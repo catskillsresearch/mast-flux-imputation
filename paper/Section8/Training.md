@@ -6,7 +6,7 @@ The audit turns inspection into training signal:
    classes, in place of uniform shot-balanced sampling;
 2. **Route terms in the loss** beyond MSE on PCA coefficients: LCFS-distance, X-point and
    $\kappa$/$\delta$ penalties evaluated through differentiable surrogates of the quantities in
-   Eq. \eqref{eq:route-geometry}, which would also be the first physics-informed element of M9;
+   Eq. \eqref{eq:route-geometry};
 3. **A checkpoint gate** defined by route quantities and failure-class rates on a fixed archive
    validation set together with the three validation shots, replacing the current acceptance
    threshold on the three shots alone ($R^2_\psi\ge0.9976$).

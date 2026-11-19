@@ -10,4 +10,4 @@ seed 42 and scorer v3.1.0.
 - [Flux maps and per-shot spread](Section6/Figures.md)
 - [Scalars](Section6/Scalars.md)
 - [Demo shots (not held out)](Section6/Demo.md)
-- [Relation to the training-log figure](Section6/SealedAllSlices.md)
+- [All-slice flux score](Section6/SealedAllSlices.md)
