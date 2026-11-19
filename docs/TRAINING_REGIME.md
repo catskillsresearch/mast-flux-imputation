@@ -161,7 +161,7 @@ calibration reached mean R² 0.926); `mast_qb/qb_rules_*` (rule-based q95/βN ga
 `benchmarks/CRC_FEQ_phase3/` (reproduction tarballs and provenance). Data: `datasets/fair_mast_train`
 (3,738 ingest parquets, 27 GB), `cache/mast_features_v1` (6.1 GB, X and EFIT ψ per shot),
 `cache/mast_qc_v1`, `cache/mast_win_v1` (QC and window indexes), FEC release (102 GB, both
-machines), shipped M9 weights in `artifacts/`. Most other result files are DIII-D and not used.
+machines), shipped M9 weights in `artifacts/`. Other result files on the drive are not used.
 
 ## 8. Cost calibration and memory discipline
 
