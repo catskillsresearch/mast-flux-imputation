@@ -22,7 +22,7 @@ GEN = REPO / "paper" / "generated"
 
 COLS = [("S", "$S$", "f"), ("R2_psi", "$R^2_\\psi$", "f"), ("R2_q95", "$R^2_{q_{95}}$", "f"),
         ("R2_betaN", "$R^2_{\\beta_N}$", "f"), ("one_minus_D_LCFS", "$1-D$", "f"), ("Consistency", "Cons", "f"),
-        ("rate_jump", "tip gap $\\ge$50 mm", "pct"), ("p95_hausdorff_mm", "p95 $d_H$ (mm)", "mm"),
+        ("rate_jump", "gap $\\ge$ 50 mm", "pct"), ("p95_hausdorff_mm", "p95 $d_H$ (mm)", "mm"),
         ("mean_xpt_disp_mm", "X-pt (mm)", "mm"), ("rate_topology_flip", "flips", "pct")]
 
 
@@ -62,9 +62,9 @@ def table(rows, ref):
 def main() -> int:
     GEN.mkdir(parents=True, exist_ok=True)
     ex = [E for E in ("E1", "E2", "E3", "E4") if (EXP / E / "result.json").is_file()]
-    names = {"E1": "E1 (MSE)", "E2": "E2 (+band, LCFS)", "E3": "E2 + scalar heads (E3)", "E4": "E3 + crit., temporal (E4)"}
+    names = {"E1": "E1", "E2": "E2", "E3": "E3", "E4": "E4"}
     for split, old in (("demo", "demo_hybrid_shipped"), ("archval100", "exp_archval100_hybrid_shipped")):
-        rows = [("shipped M9 + OSF", old)] + [(names[E], f"exp_{E}_{split}_hybrid") for E in ex]
+        rows = [("shipped", old)] + [(names[E], f"exp_{E}_{split}_hybrid") for E in ex]
         (GEN / f"exp_{split}.md").write_text(table(rows, summ(old)))
     rows = [("shipped OSF", "demo_osf_shipped"), ("OSF + E5 maps", "exp_E5_demo_osf"),
             ("shipped OSF, archval100", "exp_archval100_osf_shipped"), ("OSF + E5 maps, archval100", "exp_E5_archval100_osf")]
@@ -76,14 +76,14 @@ def main() -> int:
             out.append(f"| {lab} | {s['S']:.4f} | {s['R2_q95']:.4f} | {s['R2_betaN']:.4f} | {s['mae_q95']:.4f} | {s['mae_betaN']:.4f} |")
     (GEN / "exp_e5.md").write_text("\n".join(out) + "\n")
     # sweeps
-    out = ["| stage | setting | $\\mathcal R$ (select30) | $R^2_\\psi$ | $R^2_{qb}$ | chosen |", "|---|---|---|---|---|---|"]
+    out = ["| stage | weights | $\\mathcal R$ (select30) | $R^2_\\psi$ | $R^2_{qb}$ | chosen |", "|---|---|---|---|---|---|"]
     for E in ("E2", "E3", "E4"):
         p = EXP / E / "sweep_choice.json"
         if not p.is_file():
             continue
         d = rj(p)
         for r in d["rows"]:
-            w = ", ".join(f"{k}={v:g}" for k, v in r["w"].items())
+            w = "(" + ", ".join(f"{v:g}" for v in r["w"].values()) + ")"
             out.append(f"| {E} | {w} | {r['R']:.4f} | {r['R2_psi']:.6f} | {r['R2_qb']:.6f} | {'yes' if r['i'] == d['pick'] else ''} |")
     (GEN / "exp_sweeps.md").write_text("\n".join(out) + "\n")
     # members
@@ -98,14 +98,14 @@ def main() -> int:
             out.append(f"| {E} | {s['seed']} | {s['pick']} | {fmt(rr.get(s['pick']), 'r')} | {ep} |")
     (GEN / "exp_members.md").write_text("\n".join(out) + "\n")
     # diagnostic: experiment psi with the shipped OSF scalar read-out (scripts/demo_same_scalars.py)
-    rows = [("shipped M9 + OSF", "demo_hybrid_shipped")] + [(names[E] + ", shipped scalars", f"exp_{E}_demo_psi_shipscal")
+    rows = [("shipped", "demo_hybrid_shipped")] + [(names[E] + ", $c^*$, $s^*$", f"exp_{E}_demo_psi_shipscal")
                                                            for E in ex]
     (GEN / "exp_demo_shipscal.md").write_text(table(rows, summ("demo_hybrid_shipped")))
     # holdout
     hp = EXP / "holdout" / "result.json"
     if hp.is_file():
         pick = rj(hp)["pick"]
-        rows = [("shipped M9 + OSF", "holdout_hybrid_shipped"), (names["E1"], "exp_E1_holdout_hybrid")]
+        rows = [("shipped", "holdout_hybrid_shipped"), (names["E1"], "exp_E1_holdout_hybrid")]
         if pick != "E1":
             rows.append((names[pick] + " (pick)", f"exp_{pick}_holdout_hybrid"))
         (GEN / "exp_holdout.md").write_text(table(rows, summ("holdout_hybrid_shipped")))

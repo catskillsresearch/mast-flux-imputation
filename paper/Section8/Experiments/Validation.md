@@ -2,7 +2,7 @@
 
 @import "../../generated/exp_demo.md"
 
-Table: The three validation shots (115 frames). $\mathcal R$ relative to the shipped hybrid.
+Table: The three validation shots (115 frames). Shipped is the M9 + OSF hybrid; gap is the share of frames with an LCFS tip gap of at least 50 mm. $\mathcal R$ relative to the shipped hybrid.
 
 @import "../../generated/exp_archval100.md"
 
