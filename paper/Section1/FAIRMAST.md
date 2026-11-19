@@ -9,7 +9,7 @@ number N (endpoint `s3.echo.stfc.ac.uk`, anonymous, CC BY-SA 4.0). The ingest
 | `efm` | EFIT++: `psirz`, grid `r`, `z`, `q_95`, `betan`, X-points | labels only |
 | `amc` | coil and plasma currents | inputs |
 | `ayc` | core Thomson $T_e, n_e$ | inputs |
-| `aye` | edge Thomson $T_e, n_e$ | inputs (zeroed by the model) |
+| `aye` | edge Thomson $T_e, n_e$ | inputs (zeroed at prediction) |
 
 and writes one row per shot in the template layout, with `efit_psirz` and the EFIT++ grid. 3,738
 shots (numbers 23240–30471) were ingested, keeping all EFIT slices (ramp-up, limited, ramp-down).

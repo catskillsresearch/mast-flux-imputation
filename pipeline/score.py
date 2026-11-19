@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score MAST predictions with the Fusion Equilibrium Challenge metric (scorer v3.1.0).
+"""Score MAST predictions with the FEC MAST scoring code (v3.1.0).
 
 The functionals are the organisers' own modules, vendored byte-identical in ``fec_scoring/``
 (flat imports, exactly as on Codabench). The per-shot worker and the fold reduction are ported

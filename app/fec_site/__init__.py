@@ -1,1 +1,1 @@
-"""MAST-only viewer: EFIT vs OSF vs M9+OSF (Challenge 2) vs E4."""
+"""MAST viewer: EFIT++ ground truth (FAIR-MAST) against the model's predictions."""

@@ -21,7 +21,7 @@ frames, jitter = rms of second differences pred / EFIT, drift = end-to-start cha
 residual from a linear fit), and over the run the official FEC composite S (``pipeline.score``).
 All geometry uses the vendored scorer modules and the viewer's own helpers.
 
-    python -m pipeline.audit outputs/demo_hybrid.npz --tag demo_hybrid_shipped [--pca auto]
+    python -m pipeline.audit outputs/compare/demo_e6.npz --tag compare_demo_e6 [--pca auto]
     python -m pipeline.audit compare outputs/audit/OLD outputs/audit/NEW   # new >= old check
 
 Writes ``outputs/audit/<tag>/{frames.csv, shots.csv, summary.json, summary.md}``.
@@ -406,7 +406,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("pred", type=Path)
     ap.add_argument("--tag", default=None)
-    ap.add_argument("--pca", default=None, help="'auto' (shipped M9 member i101) or a checkpoint path")
+    ap.add_argument("--pca", default=None, help="'auto' (reference M9 member i101) or a checkpoint path")
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 2))
     a = ap.parse_args()
     run(a.pred, a.tag or a.pred.stem, a.pca, a.workers)

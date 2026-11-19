@@ -1,7 +1,7 @@
-"""Predict a split with an experiment ensemble (or the shipped M9) and audit it.
+"""Predict a split with an experiment ensemble (or the reference M9) and audit it.
 
 Scalar sources: ``heads`` (M9 scalar heads), ``osf_e5`` (OSF read-outs through the E5 maps fitted on
-FAIR-MAST training shots), ``osf_raw`` (OSF read-outs unchanged), ``osf_shipped`` (shipped c*, s*
+FAIR-MAST training shots), ``osf_raw`` (OSF read-outs unchanged), ``osf_shipped`` (reference c*, s*
 map; baseline only), ``const`` (q95 = 3.5, betaN = 1.5; for psi-only checkpoint selection).
 """
 from __future__ import annotations

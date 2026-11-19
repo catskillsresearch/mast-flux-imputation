@@ -6,7 +6,7 @@ For each EFIT frame $t$ a raw vector $x_t\in\mathbb R^{308}$ is built:
 |---|---|
 | 0–13 | 13 coil currents (EFPS, SOL, TF, P2–P6 lower/upper) and $I_p$, linearly interpolated to $t$ |
 | 14–275 | 131 core-Thomson $T_e$ and 131 $n_e$ channels, interpolated in time (0 outside the Thomson clock) |
-| 276–307 | 16 + 16 edge-Thomson channels, set to zero |
+| 276–307 | 16 + 16 edge-Thomson channels; zeroed at prediction, and in training holding the edge-Thomson values of the training rows (present in 302 of the 3,258 contributing shots, 9.1% of frames) |
 
 No spatial remapping of the Thomson channels is done; channel index stands in for radius. A per-shot
 temporal augmentation with window 9 appends the centred moving average $a_t$ (clamped at the shot

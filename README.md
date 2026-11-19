@@ -15,7 +15,7 @@ output template are those of the FEC MAST task. The paper is `paper/MAST.pdf`
 * **Output space:** a 60-mode PCA basis of FAIR-MAST EFIT++ flux, fitted on the training shots;
   $\hat\psi=\mu+C^{\top}z$.
 * **Features:** per EFIT frame, 14 currents ($I_p$ included) and 131 + 131 core-Thomson $T_e$, $n_e$
-  channels (edge Thomson zeroed), 308 values; a per-shot window-9 moving average and its smoothed
+  channels and 32 edge-Thomson columns (zeroed at prediction), 308 values; a per-shot window-9 moving average and its smoothed
   difference give 924 features, standardised and clipped to ±10.
 * **Network:** `CoeffDualContext` — a present-frame residual encoder (308 → 512, 4 blocks) and a
   context encoder (616 → 512, 3 blocks) joined by a zero-initialised gate; a linear head to the 60
@@ -73,7 +73,7 @@ are `truth`, `s1`, `sweep`, `m101` … `m505`, `select`, `final`, and any one ca
 ## Predict and score
 
 ```bash
-python scripts/make_compare_preds.py demo           # validation-shot predictions -> outputs/compare/demo_e6.npz
+python scripts/make_compare_preds.py demo holdout   # model predictions + audits -> outputs/compare/<split>_e6.npz
 python -m pipeline.score outputs/compare/demo_e6.npz
 python -m pipeline.audit outputs/compare/demo_e6.npz --tag compare_demo_e6
 MPLCONFIGDIR=/tmp/mpl python scripts/make_model_report.py   # paper tables and figures

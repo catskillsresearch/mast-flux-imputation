@@ -16,7 +16,7 @@ from models.m9.features import EDGE_START, N_FEATURES, build_one, shot_from_mast
 from models.m9.network import _clip_features, augment_temporal, build_dualctx, reconstruct
 
 MEMBER_TAGS = ("M9_win50_i101", "M9_win50_i202", "M9_win50_i303")
-# sha256 of the shipped Phase-2 Final members (catskills_fec weights/phase3/SHA256SUMS).
+# sha256 of the reference M9 members.
 SHIPPED_SHA256 = {
     "M9_win50_i101": "7660c1d3ad26e00ae088eee3a05264b7fb4582562f732ba95d78b66bb1b2cf2a",
     "M9_win50_i202": "06ba7ef2ff6139884e2fcca9d854abb7b294ae663e60af5882c6b7a02d98dace",
@@ -45,7 +45,7 @@ class M9Ensemble:
                 raise FileNotFoundError(f"missing M9 member {path}; set M9_WEIGHTS_DIR")
             sha = _sha256(path)
             if verify_sha and sha != SHIPPED_SHA256[tag]:
-                raise RuntimeError(f"{path} sha256 {sha} is not the shipped M9 member "
+                raise RuntimeError(f"{path} sha256 {sha} is not the reference M9 member "
                                    f"(pass verify_sha=False to use a rebuilt checkpoint)")
             ck = torch.load(path, map_location="cpu", weights_only=False)
             model = build_dualctx(int(ck["n_features"]), int(ck["n_pca"]), int(ck["n_raw_features"]))

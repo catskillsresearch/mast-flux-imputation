@@ -1,8 +1,8 @@
 """Common training data for all arms: cleaned pool, fixed |Ip| window, PCA basis, splits.
 
-* pool = shipped sealed-80 split minus the 349 no-plasma shots (outputs/compat/no_plasma.json);
-* QC recomputed on that pool (shipped rule); |Ip| window fixed at the shipped 328.7293519015368 kA;
-* PCA K=60 exactly as shipped (shot-balanced <= 200k frames, randomized SVD seed 42);
+* pool = sealed-80 split minus the 349 no-plasma shots (outputs/compat/no_plasma.json);
+* QC recomputed on that pool (MAD rule); |Ip| window fixed at 328.7293519015368 kA;
+* PCA K=60 (shot-balanced <= 200k frames, randomized SVD seed 42);
 * archive validation = first 10 % of the contributing shots after random.Random(42).shuffle;
   archval100 / select30 = its first 100 / 30 shots; osftrain200 = 200 training shots (seed 43).
 Writes outputs/experiments/common/data.npz and data/fair_mast/experiment_splits_seed42.json.

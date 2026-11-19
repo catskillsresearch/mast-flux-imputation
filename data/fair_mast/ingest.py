@@ -1,21 +1,14 @@
 #!/usr/bin/env python3
-"""Ingest MAST shots from the public FAIR-MAST archive into the FEC parquet schema.
+"""Ingest MAST shots from the public FAIR-MAST archive into one parquet row per shot.
 
-Port of catskills_fec catskills/scripts/mast_ingest.py (numerics unchanged). FAIR-MAST
-(https://mastapp.site, anonymous S3 at s3.echo.stfc.ac.uk, CC BY-SA 4.0) publishes the
-MAST M5-M9 archive; it is the upstream source the Fusion Equilibrium Challenge itself was
-built from.
+FAIR-MAST (https://mastapp.site, anonymous S3 at s3.echo.stfc.ac.uk, CC BY-SA 4.0) publishes the
+MAST M5-M9 archive.
 
 Per shot it reads the Zarr groups efm (EFIT++: psirz on a doubled 129-column R grid, of
 which the 65 finite columns are kept), amc (coil and plasma currents, resampled onto the
-FEC 30,000-sample 0.2 ms magnetics grid), ayc (core Thomson) and aye (edge Thomson),
-and writes one parquet row in the mast_public_test column layout *plus* the label
-efit_psirz. The output grid (``efit_grid_R``, ``efit_grid_Z``) is the shot's own efm ``r`` / ``z``.
+30,000-sample 0.2 ms magnetics grid), ayc (core Thomson) and aye (edge Thomson),
+and writes one parquet row in the output-template column layout plus the label efit_psirz. The output grid (``efit_grid_R``, ``efit_grid_Z``) is the shot's own efm ``r`` / ``z``.
 Everything in a row comes from FAIR-MAST; no other data source is read.
-
-Caveat (paraphrasing the original docstring): of ~4,566 archive shots carrying both EFIT and
-core Thomson the challenge curated 2,416, so part of this pool is the challenge's hidden test
-folds and cannot be excluded. A model trained on it is not a zero-shot MAST result.
 
     python data/fair_mast/ingest.py --pool data/fair_mast/mast_pool3.txt --shots 4 \
         --out data/fair_mast/parquet
@@ -38,8 +31,8 @@ ENDPOINT = "https://s3.echo.stfc.ac.uk"
 BUCKET = "mast/level1/shots"
 
 COILS = ["efps", "sol", "tf"] + [f"p{i}{ab}" for i in range(2, 7) for ab in ("l", "u")]
-# The archive keeps every clock in seconds; the challenge republishes them in ms, and puts
-# magnetics on one canonical grid regardless of the shot's own acquisition length.
+# The archive keeps every clock in seconds; rows use ms, with the magnetics on one canonical
+# grid regardless of the shot's own acquisition length.
 MS = 1000.0
 MAG_GRID = np.linspace(-2000.0, 3999.7998, 30000)
 
@@ -78,7 +71,7 @@ def _grp(fs, shot: int, name: str):
 
 
 def _ragged(a: np.ndarray) -> np.ndarray:
-    """(T, N) -> object array of T float64 rows, the layout the challenge parquet uses."""
+    """(T, N) -> object array of T float64 rows, the nested-array parquet layout."""
     out = np.empty(len(a), dtype=object)
     for i, row in enumerate(a):
         out[i] = np.asarray(row, np.float64)
@@ -145,8 +138,8 @@ def one_shot(fs, shot: int, static: dict) -> dict | None:
             print(f"  [{shot}] {grp} te/ne unusable")
             return None
         tt = np.asarray(ts["time"], np.float64)
-        # Archive clocks are seconds; challenge EFIT is ms. The old edge guard
-        # ``max < 10`` dropped valid 60 s aye windows (demo Te matches *1000).
+        # Archive clocks are seconds; EFIT times are written in ms. The edge clock is
+        # converted by ``thomson_times_to_ms`` (seconds or ms, whichever overlaps EFIT).
         if tag == "edge":
             times_ms = thomson_times_to_ms(tt, row["efit_times"])
             if times_ms is None:

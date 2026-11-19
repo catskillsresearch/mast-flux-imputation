@@ -69,7 +69,7 @@ def m9_weights_dir() -> Path:
         return p
     lab = lab_root()
     if lab is not None and (lab / "archive" / "artifacts").is_dir():
-        # The shipped (Phase-2 Final) M9 trio; see DATA_PROVENANCE.md for checksums.
+        # Reference M9 trio (models/m9/predict.py checks its sha256).
         return lab / "archive" / "artifacts"
     return REPO / "models" / "m9" / "weights"
 

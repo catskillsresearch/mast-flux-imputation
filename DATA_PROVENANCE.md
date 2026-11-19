@@ -14,8 +14,9 @@ trained, selected and evaluated on.
 ## 2. Model inputs
 
 Coil currents (EFPS, SOL, TF, P2–P6 upper/lower), plasma current $I_p$ and core Thomson $T_e$,
-$n_e$ (131 channels each), from FAIR-MAST `amc` and `ayc`. Edge-Thomson columns are present in the
-rows but zeroed by the model. **No magnetic probe, flux loop or EFIT-derived quantity is a model
+$n_e$ (131 channels each), from FAIR-MAST `amc` and `ayc`. Edge-Thomson columns (`aye`) are zeroed
+at prediction time; in training they carry the values of the training rows (non-zero in 302 of
+the 3,258 contributing shots). **No magnetic probe, flux loop or EFIT-derived quantity is a model
 input.** The EFIT++ ground truth is itself a magnetics-constrained reconstruction, so the labels
 encode the probes; only the model is probe-free. `pipeline/datasets.inputs_only()` strips every
 `efit_*` column except `efit_times` and the grid before the model sees a row.

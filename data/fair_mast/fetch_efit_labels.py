@@ -3,7 +3,7 @@
 
 The ingest parquets (``ingest.py``) hold ``efit_psirz`` but not ``efit_q95`` / ``efit_beta_n``,
 and they keep *every* EFIT time slice (ramp-up, limited and ramp-down included), whereas the
-Fusion Equilibrium Challenge keeps only diverted slices. This script reads, per shot, the
+The metric scores only diverted slices. This script reads, per shot, the
 FAIR-MAST ``efm`` group and writes ``labels/mast_shot_<N>.npz`` with
 
     time_ms      EFIT clock in ms (float32, identical to the ingest ``efit_times``)

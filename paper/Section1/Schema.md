@@ -7,7 +7,7 @@ Per shot the model reads:
   `tf`, `efps` (kA, or kA·turn for the P circuits), plus $I_p$.
 * **Kinetic profiles:** core Thomson $T_e, n_e$ on 131 channels at about 2 ms cadence, on the
   midplane $Z=0$ [@scannell2010]. Edge Thomson (16 channels at $R\approx1.33$–$1.49$ m) is present
-  in the rows but zeroed by the model.
+  in the rows and zeroed by the model at prediction time.
 * **Output clock:** `efit_times` (ms). Inputs are interpolated onto it.
 
 There are no magnetic-probe ($B_\theta$ pick-up) or flux-loop channels. The labels, however, are

@@ -190,7 +190,7 @@ use
 \texttt{efm} & EFIT++: \texttt{psirz}, grid \texttt{r}, \texttt{z}, \texttt{q\_95}, \texttt{betan}, X-points & labels only \\
 \texttt{amc} & coil and plasma currents & inputs \\
 \texttt{ayc} & core Thomson \(T_e, n_e\) & inputs \\
-\texttt{aye} & edge Thomson \(T_e, n_e\) & inputs (zeroed by the model) \\
+\texttt{aye} & edge Thomson \(T_e, n_e\) & inputs (zeroed at prediction) \\
 \end{longtable}
 
 and writes one row per shot in the template layout, with \texttt{efit\_psirz} and the EFIT++ grid. 3,738 shots (numbers 23240--30471) were ingested, keeping all EFIT slices (ramp-up, limited, ramp-down).
@@ -208,7 +208,7 @@ Per shot the model reads:
 \item
   \textbf{Actuators:} 13 current channels on a 0.2 ms (5 kHz) clock spanning \(-2000\) to \(4000\) ms (30,000 samples): \texttt{sol}, \texttt{p2u}, \texttt{p2l}, \texttt{p3u}, \texttt{p3l}, \texttt{p4u}, \texttt{p4l}, \texttt{p5u}, \texttt{p5l}, \texttt{p6u}, \texttt{p6l}, \texttt{tf}, \texttt{efps} (kA, or kA·turn for the P circuits), plus \(I_p\).
 \item
-  \textbf{Kinetic profiles:} core Thomson \(T_e, n_e\) on 131 channels at about 2 ms cadence, on the midplane \(Z=0\) \cite{scannell2010}. Edge Thomson (16 channels at \(R\approx1.33\)--\(1.49\) m) is present in the rows but zeroed by the model.
+  \textbf{Kinetic profiles:} core Thomson \(T_e, n_e\) on 131 channels at about 2 ms cadence, on the midplane \(Z=0\) \cite{scannell2010}. Edge Thomson (16 channels at \(R\approx1.33\)--\(1.49\) m) is present in the rows and zeroed by the model at prediction time.
 \item
   \textbf{Output clock:} \texttt{efit\_times} (ms). Inputs are interpolated onto it.
 \end{itemize}
@@ -328,7 +328,7 @@ content
 \endlastfoot
 0--13 & 13 coil currents (EFPS, SOL, TF, P2--P6 lower/upper) and \(I_p\), linearly interpolated to \(t\) \\
 14--275 & 131 core-Thomson \(T_e\) and 131 \(n_e\) channels, interpolated in time (0 outside the Thomson clock) \\
-276--307 & 16 + 16 edge-Thomson channels, set to zero \\
+276--307 & 16 + 16 edge-Thomson channels; zeroed at prediction, and in training holding the edge-Thomson values of the training rows (present in 302 of the 3,258 contributing shots, 9.1\% of frames) \\
 \end{longtable}
 
 No spatial remapping of the Thomson channels is done; channel index stands in for radius. A per-shot temporal augmentation with window 9 appends the centred moving average \(a_t\) (clamped at the shot edges) and its smoothed central difference \((a_{t+4}-a_{t-4})/8\), giving \(A(x)_t=[x_t\,|\,a_t\,|\,\dot a_t]\in\mathbb R^{924}\). Features are standardised with the training mean and standard deviation and clipped to \(\pm10\): \(\tilde x_t=\mathrm{clip}_{\pm10}\big((A(x)_t-m)/\sigma\big)\).
@@ -941,7 +941,7 @@ python data/fair_mast/fetch_efit_labels.py --shots 28348 28350 28351 \
     --out data/fair_mast/validation/labels
 python -m models.m9.train --build-cache   # features, split, PCA basis
 bash scripts/run_e6.sh                    # train, select, predict, score
-python scripts/make_compare_preds.py demo # validation predictions
+python scripts/make_compare_preds.py demo holdout  # viewer predictions
 python -m pipeline.score outputs/compare/demo_e6.npz
 python -m pipeline.audit outputs/compare/demo_e6.npz \
     --tag compare_demo_e6                 # boundary and curve distances

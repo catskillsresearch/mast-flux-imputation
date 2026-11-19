@@ -3,7 +3,7 @@ digraph model {
   node  [shape=box, style="rounded,filled", fillcolor="#f4f6fa", color="#4a5a78", fontname="Helvetica", fontsize=9];
   edge  [color="#4a5a78", arrowsize=0.6, fontname="Helvetica", fontsize=8];
 
-  inp  [label="Per EFIT frame t (inputs only, FAIR-MAST)\n14 currents: EFPS, SOL, TF, P2-P6 U/L, Ip\n131 core Te + 131 core ne (time-interpolated)\n32 edge Thomson (zeroed)", fillcolor="#fff3d6"];
+  inp  [label="Per EFIT frame t (inputs only, FAIR-MAST)\n14 currents: EFPS, SOL, TF, P2-P6 U/L, Ip\n131 core Te + 131 core ne (time-interpolated)\n32 edge Thomson (zeroed at prediction)", fillcolor="#fff3d6"];
   x    [label="x_t in R^308"];
   aug  [label="per-shot temporal augmentation (window 9)\n[ x_t | moving average a_t | (a_{t+4} - a_{t-4}) / 8 ]\nR^924, standardise, clip +-10"];
   subgraph cluster_net { label="CoeffDualContext  (one member f_s)"; style="rounded"; color="#888888";

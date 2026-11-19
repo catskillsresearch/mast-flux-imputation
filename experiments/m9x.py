@@ -1,6 +1,6 @@
 """M9 trainer with optional route terms (arm B) and a predictor that also reads the scalar heads.
 
-Arm A (all weights 0) is the shipped recipe (dualctx 512x4, window 9 smoothdiff, AdamW 1e-3/1e-4,
+Arm A (all weights 0) is the base recipe (dualctx 512x4, window 9 smoothdiff, AdamW 1e-3/1e-4,
 clip 1.0, batch 2048 shot-balanced, 50 epochs) on the common data of ``experiments.prep``.
 Arm B adds, on psi_hat = mu + z_hat C (and the EFIT psi_ax, psi_b, LCFS interior, O/X-points of
 ``experiments.route_labels``):

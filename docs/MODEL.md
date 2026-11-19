@@ -16,7 +16,7 @@ FAIR-MAST training shots after the $|I_p|$ window (`models/m9/train.py`, `--buil
 |---|---|
 | 0–13 | 13 coil currents (EFPS, SOL, TF, P2–P6 lower/upper) and $I_p$, interpolated to the EFIT time |
 | 14–275 | 131 core-Thomson $T_e$ and 131 $n_e$ channels (0 outside the Thomson clock) |
-| 276–307 | 16 + 16 edge-Thomson channels, set to zero |
+| 276–307 | 16 + 16 edge-Thomson channels; zeroed at prediction, raw in training (non-zero in 302 of 3,258 training shots) |
 
 `augment_temporal` appends a centred window-9 moving average $a_t$ and $(a_{t+4}-a_{t-4})/8$ per
 shot (924 features); features are standardised with training statistics and clipped to ±10. The

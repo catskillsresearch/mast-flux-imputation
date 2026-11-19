@@ -10,7 +10,7 @@ Pipeline (all numerics as in the original):
 3. QC fence on the remaining 3,655: quarantine a shot if max|psi| > median + 10 MAD (also short /
    non-finite / zero-std) -> 3,622 keep.
 4. |I_p| window: 2-means (k-means, seed 42) on all keep-shot |I_p| frames; ip_lo = midpoint of the
-   centres (328.73 kA in the shipped run). Only frames with |I_p| >= ip_lo are trained on.
+   centres (328.73 kA on the full pool). Only frames with |I_p| >= ip_lo are trained on.
 5. PCA: K = 60, randomized SVD (seed 42, 3 power iterations) on <= 200,000 shot-balanced frames.
 6. Train/val: 10 % of the windowed shots (seed-42 shuffle) are validation.
    Features: per-shot temporal augmentation (window 9, smoothdiff) -> 924 columns, standardised
@@ -21,8 +21,8 @@ Pipeline (all numerics as in the original):
    batch 2048 drawn shot-balanced (uniform shot, then uniform frame), steps/epoch =
    ceil(n_train_frames / 2048), 50 epochs, keep the best validation epoch. cuDNN disabled.
 
-Note: retraining reproduces the recipe, not the shipped bytes (GPU non-determinism, library
-versions). ``models/m9/predict.py`` verifies the shipped sha256 by default.
+Note: retraining reproduces the recipe, not the checkpoint bytes (GPU non-determinism, library
+versions). ``models/m9/predict.py`` verifies the reference sha256 by default.
 
     python -m models.m9.train --build-cache                     # step 1 (repo-local cache)
     python -m models.m9.train --member all                      # steps 2-7, 3 members
@@ -278,11 +278,11 @@ def main() -> int:
     ship_keep = set((DATA / "fair_mast" / "mast_qc_keep.txt").read_text().split())
     train = [k for k in pool if k in set(keep)]
     print(f"[m9] sealed {len(sealed)}  pool {len(pool)}  qc keep {len(keep)} "
-          f"(== shipped keep list: {set(keep) == ship_keep})  maxabs_hi {thr['maxabs_hi']:.6g}", flush=True)
+          f"(== keep list: {set(keep) == ship_keep})  maxabs_hi {thr['maxabs_hi']:.6g}", flush=True)
     if a.train_shots:
         train = train[:a.train_shots]
     win = fit_ip_lo(a.feature_cache, train)
-    print(f"[m9] ip_lo {win['ip_lo']:.10g} kA (shipped 328.7293519015368)", flush=True)
+    print(f"[m9] ip_lo {win['ip_lo']:.10g} kA (fixed 328.7293519015368)", flush=True)
     seeds = list(MEMBERS) if a.member == "all" else [int(a.member)]
     for s in seeds:
         ck = train_member(a.feature_cache, train, win["ip_lo"], s, epochs=a.epochs)

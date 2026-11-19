@@ -6,7 +6,7 @@ Per EFIT frame t the raw feature vector x_t in R^308 is
                efps, sol, tf, p2l, p2u, p3l, p3u, p4l, p4u, p5l, p5u, p6l, p6u, plasma (I_p last)
     x[14:276]  core Thomson: 131 T_e channels then 131 n_e channels, each channel interpolated in time
                onto efit_times (zero outside the Thomson clock); NO spatial remapping
-    x[276:308] edge Thomson: 16 T_e + 16 n_e channels (the shipped M9 zeroes these at inference,
+    x[276:308] edge Thomson: 16 T_e + 16 n_e channels (the model zeroes these at inference,
                ``mask_edge=True``)
 
 Code below is copied without numerical change; only imports were made self-contained.
@@ -93,15 +93,6 @@ def shot_from_mast_row(row: dict) -> dict:
                 "times": np.asarray(row["thomson_edge_times"], dtype=np.float64),
                 "Te": np.asarray(row["thomson_edge_Te"], dtype=np.float32),
                 "ne": np.asarray(row["thomson_edge_ne"], dtype=np.float32),
-            }
-        except Exception:
-            pass
-    if row.get("thomson_chord_Z") is not None:
-        try:
-            shot["thomson_chords"] = {
-                "name": np.asarray(row["thomson_chord_name"]).astype(str),
-                "Z": np.asarray(row["thomson_chord_Z"], dtype=np.float64),
-                "R": np.asarray(row["thomson_chord_R"], dtype=np.float64),
             }
         except Exception:
             pass

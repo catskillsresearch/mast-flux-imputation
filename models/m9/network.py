@@ -1,6 +1,6 @@
 """M9 trunk + temporal features (ported from the catskills_fec M9 trunk module).
 
-Only the pieces the shipped M9 checkpoints use are kept: ``augment_temporal`` (mode
+Only the pieces the M9 checkpoints use are kept: ``augment_temporal`` (mode
 "smoothdiff"), ``_clip_features`` and the ``dualctx`` trunk ``CoeffDualContext``. Numerics are
 unchanged. The five scalar heads (q95, betaN, R_axis, Z_axis, li) exist in the checkpoint's
 state dict for architectural compatibility but were never trained by the M9 recipe (its loss is
@@ -100,7 +100,7 @@ class CoeffDualContext(torch.nn.Module):
         self.gate = torch.nn.Parameter(torch.zeros(1))
 
         self.coeff_head = torch.nn.Linear(self.width, n_pca)
-        # Untrained heads kept only so the shipped state dicts load strictly.
+        # Scalar heads (trained by experiments/e6.py; untrained in the reference M9 trio).
         self.q95_head = torch.nn.Linear(self.width, 1)
         self.beta_head = torch.nn.Linear(self.width, 1)
         self.r_axis_head = torch.nn.Linear(self.width, 1)
@@ -124,7 +124,7 @@ class CoeffDualContext(torch.nn.Module):
         )
 
 
-# Hyper-parameters of the shipped M9 trunk (catskills_fec M9 training script).
+# Hyper-parameters of the M9 trunk (catskills_fec M9 training script).
 TRUNK = dict(width=512, blocks=4, ctx_width=512, ctx_blocks=3, dropout=0.05, activation="relu")
 
 

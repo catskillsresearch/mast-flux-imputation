@@ -12,7 +12,7 @@ python data/fair_mast/fetch_efit_labels.py --shots 28348 28350 28351 \
     --out data/fair_mast/validation/labels
 python -m models.m9.train --build-cache   # features, split, PCA basis
 bash scripts/run_e6.sh                    # train, select, predict, score
-python scripts/make_compare_preds.py demo # validation predictions
+python scripts/make_compare_preds.py demo holdout  # viewer predictions
 python -m pipeline.score outputs/compare/demo_e6.npz
 python -m pipeline.audit outputs/compare/demo_e6.npz \
     --tag compare_demo_e6                 # boundary and curve distances

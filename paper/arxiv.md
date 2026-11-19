@@ -122,7 +122,7 @@ number N (endpoint `s3.echo.stfc.ac.uk`, anonymous, CC BY-SA 4.0). The ingest
 | `efm` | EFIT++: `psirz`, grid `r`, `z`, `q_95`, `betan`, X-points | labels only |
 | `amc` | coil and plasma currents | inputs |
 | `ayc` | core Thomson $T_e, n_e$ | inputs |
-| `aye` | edge Thomson $T_e, n_e$ | inputs (zeroed by the model) |
+| `aye` | edge Thomson $T_e, n_e$ | inputs (zeroed at prediction) |
 
 and writes one row per shot in the template layout, with `efit_psirz` and the EFIT++ grid. 3,738
 shots (numbers 23240–30471) were ingested, keeping all EFIT slices (ramp-up, limited, ramp-down).
@@ -144,7 +144,7 @@ Per shot the model reads:
   `tf`, `efps` (kA, or kA·turn for the P circuits), plus $I_p$.
 * **Kinetic profiles:** core Thomson $T_e, n_e$ on 131 channels at about 2 ms cadence, on the
   midplane $Z=0$ [@scannell2010]. Edge Thomson (16 channels at $R\approx1.33$–$1.49$ m) is present
-  in the rows but zeroed by the model.
+  in the rows and zeroed by the model at prediction time.
 * **Output clock:** `efit_times` (ms). Inputs are interpolated onto it.
 
 There are no magnetic-probe ($B_\theta$ pick-up) or flux-loop channels. The labels, however, are
@@ -244,7 +244,7 @@ For each EFIT frame $t$ a raw vector $x_t\in\mathbb R^{308}$ is built:
 |---|---|
 | 0–13 | 13 coil currents (EFPS, SOL, TF, P2–P6 lower/upper) and $I_p$, linearly interpolated to $t$ |
 | 14–275 | 131 core-Thomson $T_e$ and 131 $n_e$ channels, interpolated in time (0 outside the Thomson clock) |
-| 276–307 | 16 + 16 edge-Thomson channels, set to zero |
+| 276–307 | 16 + 16 edge-Thomson channels; zeroed at prediction, and in training holding the edge-Thomson values of the training rows (present in 302 of the 3,258 contributing shots, 9.1% of frames) |
 
 No spatial remapping of the Thomson channels is done; channel index stands in for radius. A per-shot
 temporal augmentation with window 9 appends the centred moving average $a_t$ (clamped at the shot
@@ -665,7 +665,7 @@ python data/fair_mast/fetch_efit_labels.py --shots 28348 28350 28351 \
     --out data/fair_mast/validation/labels
 python -m models.m9.train --build-cache   # features, split, PCA basis
 bash scripts/run_e6.sh                    # train, select, predict, score
-python scripts/make_compare_preds.py demo # validation predictions
+python scripts/make_compare_preds.py demo holdout  # viewer predictions
 python -m pipeline.score outputs/compare/demo_e6.npz
 python -m pipeline.audit outputs/compare/demo_e6.npz \
     --tag compare_demo_e6                 # boundary and curve distances
