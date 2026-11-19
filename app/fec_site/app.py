@@ -1,9 +1,9 @@
-"""MAST-only viewer: EFIT (truth) vs OSF vs M9+OSF (Challenge 2) vs E4 (FAIR-MAST only).
+"""MAST-only viewer: EFIT (truth) vs OSF vs M9+OSF (Challenge 2) vs E4 and E6 (FAIR-MAST only).
 
 Pages
     /                         splits, available predictions, fold scorecards
     /split/<split>            per-shot table (frames, per-shot R2_psi and D_LCFS per model)
-    /compare/<split>/<key>    side by side: EFIT++ | Challenge-2 hybrid | E4, overlaid scalar traces,
+    /compare/<split>/<key>    side by side: EFIT++ | Challenge-2 hybrid | E6, overlaid scalar traces,
                               per-frame audit metrics (app/fec_site/compare.py)
     /shot/<split>/<key>       psi contours + LCFS + O/X-points + equal-Te pairs for each model,
                               residual maps, error histograms, q95 / betaN traces, time scrubber,
@@ -45,10 +45,10 @@ from pipeline.paths import fair_mast_labels_dir, output_dir  # noqa: E402
 
 STATIC = Path(__file__).resolve().parent / "static"
 MACHINE = "MAST"
-MODELS = (("osf", "OSF"), ("hybrid", "M9 + OSF (Challenge 2)"), ("e4", "E4 (FAIR-MAST only)"))
+MODELS = (("osf", "OSF"), ("hybrid", "M9 + OSF (Challenge 2)"), ("e4", "E4 (FAIR-MAST only)"), ("e6", "E6 (FAIR-MAST only, curve distance)"))
 # where each mode's predictions live: pipeline.predict writes outputs/<split>_<mode>.npz;
 # scripts/make_compare_preds.py writes the E4 ensemble to outputs/compare/<split>_e4.npz
-PRED_DIR = {"e4": "compare"}
+PRED_DIR = {"e4": "compare", "e6": "compare"}
 
 
 def _pred_base(split: str, mode: str) -> Path:
@@ -350,7 +350,7 @@ def _scorecard(split: str, mode: str, label: str) -> str:
 def page_index() -> str:
     cmp = " · ".join(f"<a href='/compare/demo/{k}'>{k}</a>" for k in _keys("demo"))
     parts = ["<h1>MAST poloidal-flux imputation</h1>",
-             f"<p class='lead'><b>Side-by-side (truth | Challenge 2 | E4) on the FEC demo shots:</b> {cmp}</p>",
+             f"<p class='lead'><b>Side-by-side (truth | Challenge 2 | E6) on the FEC demo shots:</b> {cmp}</p>",
              "<p class='lead'>EFIT++ (truth) vs the OSF Grad–Shafranov solver vs the M9 + OSF hybrid. "
              "No magnetic-probe or flux-loop input is used by either model.</p>"]
     for split in SPLIT_TITLE:
@@ -384,7 +384,7 @@ def page_split(split: str) -> str:
 SHOT_JS = r"""
 const SPLIT = %SPLIT%, KEY = %KEY%;
 const COLS = {efit: '#111', osf: '#b5651d', hybrid: '#1e5aa8', e4: '#2f8f3a'};
-const LABEL = {efit: 'EFIT++', osf: 'OSF', hybrid: 'M9 + OSF (Challenge 2)', e4: 'E4 (FAIR-MAST only)'};
+const LABEL = {efit: 'EFIT++', osf: 'OSF', hybrid: 'M9 + OSF (Challenge 2)', e4: 'E4 (FAIR-MAST only)', e6: 'E6 (FAIR-MAST only, curve distance)'};
 let SERIES = null;
 function fmt(v, n=4) { return (v === null || v === undefined) ? '–' : Number(v).toFixed(n); }
 async function getJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(await r.text()); return r.json(); }
