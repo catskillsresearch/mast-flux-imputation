@@ -252,13 +252,22 @@ def _attribution() -> list[str]:
     return out or ["no feature differences found; the cause is not the input data"]
 
 
+def _ref(ref_audit: Path, split: str) -> dict:
+    """Current model's scores: the viewer audit (FAIR-MAST rows) when present, else the run audit."""
+    for t in (f"compare_{split}_e6", f"exp_E6_{split}_hybrid"):
+        f = Path(ref_audit) / t / "summary.json"
+        if f.is_file():
+            return rj(f)
+    raise FileNotFoundError(f"no reference audit for {split} under {ref_audit}")
+
+
 def cmd_smoke(a):
     from experiments.driver import pred_audit
     files = rj(Path(a.ref_exp) / "select.json")["files"]
     res = {}
     for split in ("holdout", "demo"):
         new = pred_audit(split, f"xcheck_current_{split}_fresh", members=files, scalars="heads")
-        ref = rj(Path(a.ref_audit) / f"exp_E6_{split}_hybrid" / "summary.json")
+        ref = _ref(a.ref_audit, split)
         res[split] = _verdict(new, ref, a.s_drop_max, a.term_drop_max)
     res["pass"] = res["holdout"]["pass"]
     res["attribution"] = _attribution()
@@ -277,7 +286,7 @@ def cmd_compare(a):
     res = {}
     for split in ("holdout", "demo"):
         new = rj(aud / f"exp_E6_{split}_hybrid" / "summary.json")
-        ref = rj(Path(a.ref_audit) / f"exp_E6_{split}_hybrid" / "summary.json")
+        ref = _ref(a.ref_audit, split)
         res[split] = _verdict(new, ref, a.s_drop_max, a.term_drop_max)
     res["pass"] = res["holdout"]["pass"]
     res["attribution"] = _attribution() if not res["pass"] else []
