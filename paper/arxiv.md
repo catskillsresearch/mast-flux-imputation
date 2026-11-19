@@ -997,8 +997,6 @@ gives the 0.997771 above. The difference is the frame population, not a differen
 
 | check | result |
 |---|---|
-| ported OSF vs original code, 3 demo shots | $\max|\Delta\psi|$, $\max|\Delta q_{95}|$, $\max|\Delta\beta_N|$ = 0 |
-| ported M9 inference vs original, 3 demo shots | $\max|\Delta\psi|$ = 0 |
 | `pipeline.score` vs the source repository's scorer, same predictions | 19 of 19 result fields identical, all four runs |
 | M9 split / QC / $|I_p|$ window recomputed | keep list identical; $I_p^{\rm lo}=328.7293519015368$ kA |
 | shipped M9 checkpoints | sha256 match the source `SHA256SUMS` |

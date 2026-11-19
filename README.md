@@ -262,14 +262,12 @@ relative to shipped on the holdout). Tables: `python scripts/make_experiment_tab
 
 | check | result |
 |---|---|
-| OSF port vs original `osf/mast_12_osf_0_0_12.py` (3 demo shots) | max \|Δψ\|, \|Δq95\|, \|ΔβN\| = 0 |
-| M9 port vs original `generate_final_predictions` path (3 demo shots) | max \|Δψ\| = 0 |
 | `pipeline.score` vs catskills_fec `mast_eval.score_holdout` on the same predictions | all 19 result fields identical (holdout osf/hybrid, demo osf/hybrid) |
 | `models.m9.train` split / QC / window | QC keep == shipped 3,622 list; ip_lo == 328.7293519015368 |
 | viewer | all routes 200, unknown routes 404 |
 
-Re-run: `python tests/parity_demo.py <ref_dir>`, `python tests/crosscheck_dump_gt.py …`,
-`tests/crosscheck_catskills_scorer.py` (needs the original repository).
+Re-run: `python tests/crosscheck_dump_gt.py …`, then `tests/crosscheck_catskills_scorer.py` (needs the
+source repository).
 
 ## Build the paper
 
@@ -302,7 +300,7 @@ models/m9/           features.py, network.py, predict.py, train.py
 pipeline/            paths.py, datasets.py, predict.py, score.py
 app/fec_site/        MAST viewer (stdlib HTTP server + Plotly)
 docs/MODEL.md        derivations and parameter provenance
-tests/               parity and cross-check scripts
+tests/               label test and scorer cross-check scripts
 ```
 
 Licence: Apache License 2.0 (see `LICENSE` and `NOTICE`); Copyright 2026 Lars Warren Ericson (d/b/a Catskills Research Company). Data licences: FEC CC BY 4.0; FAIR-MAST CC BY-SA 4.0.

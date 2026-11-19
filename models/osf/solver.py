@@ -2,7 +2,7 @@
 
 Copied from catskills_fec ``osf/osf_0_0_12.py``. Changes are import paths only (``models.io``,
 ``models.osf.primitives``, ``models.osf.calibration``, vendored ``fec_scoring``); the numerics are
-bit-identical (verified in tests/parity_demo.py against the original on the 3 demo shots).
+unchanged.
 
 The module-level symbols below are the solver's working registers. ``bind(cal)`` overwrites every
 one of them from a ``Calibration``; the MAST assignment lives in ``calibration.py``, split into
