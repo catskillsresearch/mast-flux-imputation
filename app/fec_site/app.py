@@ -1,8 +1,10 @@
-"""MAST-only viewer: EFIT (truth) vs OSF vs M9+OSF.
+"""MAST-only viewer: EFIT (truth) vs OSF vs M9+OSF (Challenge 2) vs E4 (FAIR-MAST only).
 
 Pages
     /                         splits, available predictions, fold scorecards
     /split/<split>            per-shot table (frames, per-shot R2_psi and D_LCFS per model)
+    /compare/<split>/<key>    side by side: EFIT++ | Challenge-2 hybrid | E4, overlaid scalar traces,
+                              per-frame audit metrics (app/fec_site/compare.py)
     /shot/<split>/<key>       psi contours + LCFS + O/X-points + equal-Te pairs for each model,
                               residual maps, error histograms, q95 / betaN traces, time scrubber,
                               per-frame scorecards
@@ -43,7 +45,15 @@ from pipeline.paths import fair_mast_labels_dir, output_dir  # noqa: E402
 
 STATIC = Path(__file__).resolve().parent / "static"
 MACHINE = "MAST"
-MODELS = (("osf", "OSF"), ("hybrid", "M9 + OSF"))
+MODELS = (("osf", "OSF"), ("hybrid", "M9 + OSF (Challenge 2)"), ("e4", "E4 (FAIR-MAST only)"))
+# where each mode's predictions live: pipeline.predict writes outputs/<split>_<mode>.npz;
+# scripts/make_compare_preds.py writes the E4 ensemble to outputs/compare/<split>_e4.npz
+PRED_DIR = {"e4": "compare"}
+
+
+def _pred_base(split: str, mode: str) -> Path:
+    d = output_dir() / PRED_DIR[mode] if mode in PRED_DIR else output_dir()
+    return d / f"{split}_{mode}"
 SPLIT_TITLE = {"demo": "FEC labelled demo (3 shots)",
                "holdout": "FAIR-MAST sealed holdout (seed 42, diverted frames)",
                "public_test": "FEC mast_public_test (unlabelled)"}
@@ -65,19 +75,19 @@ R, Z, MASK, MASK_F = _env()
 
 @lru_cache(maxsize=16)
 def _pred_meta(split: str, mode: str) -> dict | None:
-    p = output_dir() / f"{split}_{mode}.json"
+    p = _pred_base(split, mode).with_suffix(".json")
     return json.loads(p.read_text()) if p.is_file() else None
 
 
 @lru_cache(maxsize=8)
 def _pred_npz(split: str, mode: str):
-    p = output_dir() / f"{split}_{mode}.npz"
+    p = _pred_base(split, mode).with_suffix(".npz")
     return np.load(p) if p.is_file() else None
 
 
 @lru_cache(maxsize=16)
 def _score(split: str, mode: str) -> dict | None:
-    p = output_dir() / f"{split}_{mode}.score.json"
+    p = _pred_base(split, mode).with_suffix(".score.json")
     return json.loads(p.read_text()) if p.is_file() else None
 
 
@@ -338,12 +348,14 @@ def _scorecard(split: str, mode: str, label: str) -> str:
 
 
 def page_index() -> str:
+    cmp = " · ".join(f"<a href='/compare/demo/{k}'>{k}</a>" for k in _keys("demo"))
     parts = ["<h1>MAST poloidal-flux imputation</h1>",
+             f"<p class='lead'><b>Side-by-side (truth | Challenge 2 | E4) on the FEC demo shots:</b> {cmp}</p>",
              "<p class='lead'>EFIT++ (truth) vs the OSF Grad–Shafranov solver vs the M9 + OSF hybrid. "
              "No magnetic-probe or flux-loop input is used by either model.</p>"]
-    for split in SPLITS:
+    for split in SPLIT_TITLE:
         keys = _keys(split)
-        parts.append(f"<h2><a href='/split/{split}'>{SPLIT_TITLE[split]}</a> "
+        parts.append(f"<h2><a href='/split/{split}'>{SPLIT_TITLE.get(split, split)}</a> "
                      f"<span class='meta'>({len(keys)} shots)</span></h2><div class='cards'>")
         parts += [_scorecard(split, m, lab) for m, lab in MODELS]
         parts.append("</div>")
@@ -361,8 +373,9 @@ def page_split(split: str) -> str:
         T = next((per[m][k]["T"] for m, _ in MODELS if k in per[m]), "")
         cells = "".join(f"<td>{_fmt(per[m].get(k, {}).get('r2_psi'))}</td><td>{_fmt(per[m].get(k, {}).get('dlcfs'))}</td>"
                         for m, _ in MODELS)
-        rows.append(f"<tr><td><a href='/shot/{split}/{k}'>{k}</a></td><td>{T}</td>{cells}</tr>")
-    body = (f"<h1>{SPLIT_TITLE[split]}</h1><div class='cards'>"
+        rows.append(f"<tr><td><a href='/shot/{split}/{k}'>{k}</a> · <a href='/compare/{split}/{k}'>compare</a></td>"
+                    f"<td>{T}</td>{cells}</tr>")
+    body = (f"<h1>{SPLIT_TITLE.get(split, split)}</h1><div class='cards'>"
             + "".join(_scorecard(split, m, lab) for m, lab in MODELS) + "</div>"
             f"<table>{head}{''.join(rows)}</table>")
     return _page(split, body, [("/", "home"), (f"/split/{split}", split)])
@@ -370,8 +383,8 @@ def page_split(split: str) -> str:
 
 SHOT_JS = r"""
 const SPLIT = %SPLIT%, KEY = %KEY%;
-const COLS = {efit: '#111', osf: '#b5651d', hybrid: '#1e5aa8'};
-const LABEL = {efit: 'EFIT++', osf: 'OSF', hybrid: 'M9 + OSF'};
+const COLS = {efit: '#111', osf: '#b5651d', hybrid: '#1e5aa8', e4: '#2f8f3a'};
+const LABEL = {efit: 'EFIT++', osf: 'OSF', hybrid: 'M9 + OSF (Challenge 2)', e4: 'E4 (FAIR-MAST only)'};
 let SERIES = null;
 function fmt(v, n=4) { return (v === null || v === undefined) ? '–' : Number(v).toFixed(n); }
 async function getJSON(u) { const r = await fetch(u); if (!r.ok) throw new Error(await r.text()); return r.json(); }
@@ -465,7 +478,7 @@ function series() {
 
 
 def page_shot(split: str, key: str) -> str:
-    body = f"""<h1>{key}</h1><p class='meta'>{SPLIT_TITLE[split]}</p>
+    body = f"""<h1>{key}</h1><p class='meta'>{SPLIT_TITLE.get(split, split)}</p>
 <div class='scrub'><button class='btn' id='prev'>◀</button><input type='range' id='scrub' min='0' value='0'>
 <button class='btn' id='next'>▶</button><span id='tlabel'></span></div>
 <div class='row3'><div id='map_efit' class='plot'></div><div id='map_osf' class='plot'></div><div id='map_hybrid' class='plot'></div></div>
@@ -505,6 +518,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, page_split(parts[1]).encode(), "text/html; charset=utf-8")
             if len(parts) == 3 and parts[0] == "shot" and parts[1] in SPLITS and parts[2] in _keys(parts[1]):
                 return self._send(200, page_shot(parts[1], parts[2]).encode(), "text/html; charset=utf-8")
+            if len(parts) == 3 and parts[0] == "compare" and parts[1] in SPLITS and parts[2] in _keys(parts[1]):
+                from app.fec_site.compare import page_compare
+                return self._send(200, page_compare(parts[1], parts[2]).encode(), "text/html; charset=utf-8")
+            if u.path == "/api/compare":
+                from app.fec_site.compare import api_compare
+                split, key = q.get("split", ""), q.get("key", "")
+                if split not in SPLITS or key not in _keys(split):
+                    return self._send(404, b'{"error": "unknown split/key"}', "application/json")
+                return self._send(200, json.dumps(api_compare(split, key)).encode(), "application/json")
             if u.path in ("/api/series", "/api/frame"):
                 split, key = q.get("split", ""), q.get("key", "")
                 if split not in SPLITS or key not in _keys(split):
