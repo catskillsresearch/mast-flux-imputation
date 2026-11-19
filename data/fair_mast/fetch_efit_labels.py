@@ -106,7 +106,9 @@ def main() -> int:
             rec = fetch_one(fs, shot)
         except Exception as e:  # noqa: BLE001
             return shot, f"FAILED {type(e).__name__}: {e}"
-        np.savez(dest, **rec)
+        tmp = dest.with_name(dest.stem + ".part.npz")
+        np.savez(tmp, **rec)
+        tmp.replace(dest)  # atomic
         return shot, f"{len(rec['time_ms'])} slices, {int(rec['diverted'].sum())} diverted"
 
     with ThreadPoolExecutor(a.workers) as ex:

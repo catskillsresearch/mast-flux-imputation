@@ -1,5 +1,32 @@
 # Commands
 
+The full chain runs from one `Makefile` with settings in `workflow/config.mk`:
+
+```
+bash scripts/run_xcheck.sh   # make all, as a systemd user unit
+make download labels cache   # FAIR-MAST rows, labels, features
+make prep route              # split, QC, |Ip| window, PCA basis
+make features smoke          # diff vs an existing copy; current model on fresh rows
+make sweep train select      # weight sweep, five seeds, selection
+make score compare           # validation shots, holdout, comparison
+make paper
+```
+
+Every step writes a stamp and its outputs atomically under `work/xcheck/`, so a finished step is
+skipped and an interrupted run resumes. The data preparation rules are fixed in code:
+
+* EFIT and Thomson clocks are converted from seconds to ms. The edge Thomson block is kept only
+  when its clock reads as seconds (maximum below 10), the rule the training rows were built with;
+  at prediction the 32 edge columns are set to zero.
+* Magnetics are interpolated onto a fixed 0.2 ms grid from $-2000$ to $3999.8$ ms; currents and
+  Thomson profiles are then interpolated to the EFIT times, Thomson being zero outside its clock.
+* `efm/psirz` is stored on a doubled 129-column R grid; every other column is dropped to give
+  $65\times65$ on the shot's own grid.
+* Shots with exactly 200 EFIT slices on the fixed 5 ms clock carry no plasma and are removed;
+  training frames need $|I_p|\ge 328.73$ kA; only diverted frames are scored.
+
+The individual commands are:
+
 ```
 python data/fair_mast/ingest.py \
     --pool data/fair_mast/mast_pool3.txt --shots 5000

@@ -19,6 +19,7 @@ the grid are removed before prediction.
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -28,13 +29,13 @@ from models.io import cut_efit_frames, psi_stack, row_from_parquet
 from pipeline.paths import DATA, fair_mast_dir, fair_mast_labels_dir, fec_demo_dir, fec_public_test_dir
 
 SPLITS = ("demo", "demo_fec", "holdout", "public_test", "archval100", "select30", "osftrain200")
-EXP_SPLITS_JSON = DATA / "fair_mast" / "experiment_splits_seed42.json"
+EXP_SPLITS_JSON = Path(os.environ.get("MFI_SPLITS_JSON", DATA / "fair_mast" / "experiment_splits_seed42.json"))
 INPUT_EFIT = ("efit_times", "efit_grid_R", "efit_grid_Z")
-HOLDOUT_JSON = DATA / "fair_mast" / "holdout_seed42.json"
+HOLDOUT_JSON = Path(os.environ.get("MFI_HOLDOUT_JSON", DATA / "fair_mast" / "holdout_seed42.json"))
 # Held-out MAST validation shots, read from FAIR-MAST (data/fair_mast/ingest.py --keys ... and
 # fetch_efit_labels.py --shots ..., both into data/fair_mast/validation/).
 VALIDATION_SHOTS = (28348, 28350, 28351)
-VALIDATION_DIR = DATA / "fair_mast" / "validation"
+VALIDATION_DIR = Path(os.environ.get("MFI_VALIDATION_DIR", DATA / "fair_mast" / "validation"))
 
 
 @dataclass

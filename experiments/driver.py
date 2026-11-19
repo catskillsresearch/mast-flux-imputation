@@ -15,6 +15,7 @@ import sys
 import time
 from pathlib import Path
 
+from pipeline.paths import output_dir
 from experiments.common import COMMON, EXP, REPO, SPLITS_JSON, route_score, stage_done, status_update
 
 PY = sys.executable
@@ -50,7 +51,7 @@ def wj(p, d):
 def pred_audit(split, tag, **kw):
     """Predict (if not already) and audit (if not already); returns the audit summary."""
     from experiments.evaluate import audit, predict_split
-    summ = REPO / "outputs" / "audit" / tag / "summary.json"
+    summ = output_dir() / "audit" / tag / "summary.json"
     if summ.is_file():
         return rj(summ)
     npz = EXP / "preds" / f"{tag}.npz"

@@ -10,7 +10,7 @@
    no-plasma shots included; without them the same fit gives 471.99 kA, so the value is fixed as a
    named constant. 3,258 shots contribute 211,534 frames, limited and diverted frames alike.
 5. **Archive validation:** 10% of the contributing shots after a seed-42 shuffle, 325 shots, are
-   held out of training. Its first 100 shots, `archval100`, carry the validation objective of the
-   calibration; the full 325 carry the selection score.
+   held out of training. Its first 100 shots, `archval100`, carry the validation objective and the
+   selection score of the calibration.
 
 The principal-component basis and the feature statistics are fitted on the training shots only.

@@ -18,6 +18,7 @@ import sys
 import time
 from pathlib import Path
 
+from pipeline.paths import output_dir
 from experiments.common import EXP, REPO
 
 E6 = EXP / "E6"
@@ -78,6 +79,10 @@ E4_S_ARCH = None
 
 
 def e4_arch():
+    """Selection gate (archval100 S). A from-scratch run sets MFI_SELECT_GATE_S instead of
+    reading the earlier experiment's result."""
+    if os.environ.get("MFI_SELECT_GATE_S"):
+        return {"S": float(os.environ["MFI_SELECT_GATE_S"])}
     return rj(EXP / "E4" / "result.json")["archval100"]
 
 
@@ -90,6 +95,9 @@ def st_s1():
     """Plan step 1: re-select existing E3/E4 checkpoints by the curve-distance objective J."""
     from experiments.e6 import ensemble_objective
     out = E6 / "s1.json"
+    if not (EXP / "E4" / "members.json").is_file():  # from-scratch run: nothing to re-select
+        wj(out, {"skipped": "no E3/E4 checkpoints in this run", "files": []})
+        return
     D = _data(need_train=False)
     e4_files = rj(EXP / "E4" / "members.json")["files"]
     res = {"E4_ensemble": ensemble_objective(e4_files, D), "seeds": []}
@@ -188,15 +196,15 @@ def st_final():
     res["demo"] = pred_audit("demo", "exp_E6_demo_hybrid", files)
     res["holdout"] = pred_audit("holdout", "exp_E6_holdout_hybrid", files)
     s1 = rj(E6 / "s1.json")["files"]
-    res["S1_demo"] = pred_audit("demo", "exp_S1_demo_hybrid", s1)
-    res["E4_demo"] = rj(REPO / "outputs/audit/exp_E4_demo_hybrid/summary.json")
-    res["E4_holdout"] = rj(REPO / "outputs/audit/exp_E4_holdout_hybrid/summary.json")
-    res["C2_demo"] = rj(REPO / "outputs/audit/demo_hybrid_shipped/summary.json")
-    res["C2_holdout"] = rj(REPO / "outputs/audit/holdout_hybrid_shipped/summary.json")
-    compare_md("demo_hybrid_shipped", "exp_E6_demo_hybrid", E6 / "compare_demo_C2.md")
-    compare_md("exp_E4_demo_hybrid", "exp_E6_demo_hybrid", E6 / "compare_demo_E4.md")
-    compare_md("holdout_hybrid_shipped", "exp_E6_holdout_hybrid", E6 / "compare_holdout_C2.md")
-    compare_md("exp_E4_holdout_hybrid", "exp_E6_holdout_hybrid", E6 / "compare_holdout_E4.md")
+    if s1:
+        res["S1_demo"] = pred_audit("demo", "exp_S1_demo_hybrid", s1)
+    aud = output_dir() / "audit"
+    for name, tag in (("E4", "exp_E4"), ("C2", None)):
+        for split in ("demo", "holdout"):
+            t = f"{tag}_{split}_hybrid" if tag else f"{split}_hybrid_shipped"
+            if (aud / t / "summary.json").is_file():  # earlier references, when present
+                res[f"{name}_{split}"] = rj(aud / t / "summary.json")
+                compare_md(t, f"exp_E6_{split}_hybrid", E6 / f"compare_{split}_{name}.md")
     wj(E6 / "final.json", res)
     log(f"final demo S {res['demo']['S']} holdout S {res['holdout']['S']}")
 

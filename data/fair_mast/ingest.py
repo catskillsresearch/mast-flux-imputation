@@ -86,7 +86,7 @@ def _cell(v):
     return a.tolist() if a.ndim > 1 or a.dtype == object else a
 
 
-def one_shot(fs, shot: int, static: dict) -> dict | None:
+def one_shot(fs, shot: int, static: dict, edge_clock: str = "training") -> dict | None:
     efm = _grp(fs, shot, "efm")
     psi = np.asarray(efm["psirz"])                       # (T, 65, 129)
     keep = np.isfinite(psi[0]).all(0)                    # the 65 real R columns
@@ -138,16 +138,23 @@ def one_shot(fs, shot: int, static: dict) -> dict | None:
             print(f"  [{shot}] {grp} te/ne unusable")
             return None
         tt = np.asarray(ts["time"], np.float64)
-        # Archive clocks are seconds; EFIT times are written in ms. The edge clock is
-        # converted by ``thomson_times_to_ms`` (seconds or ms, whichever overlaps EFIT).
+        # Archive clocks are seconds; EFIT times are written in ms. Edge clock, two rules:
+        #   training (default): keep the edge block only when its clock reads as seconds
+        #     (max < 10) and convert it like the core (float64 x 1000); other edge clocks are
+        #     dropped. This is the rule the training rows were built with.
+        #   overlap: ``thomson_times_to_ms`` picks seconds or ms by overlap with EFIT (float32).
         if tag == "edge":
-            times_ms = thomson_times_to_ms(tt, row["efit_times"])
+            if edge_clock == "training":
+                times_ms = tt * MS if (tt.size and np.nanmax(tt) < 10.0) else None
+            else:
+                times_ms = thomson_times_to_ms(tt, row["efit_times"])
+                times_ms = None if times_ms is None else times_ms.astype(np.float32)
             if times_ms is None:
                 row["thomson_edge_times"] = np.zeros(0, np.float64)
                 row["thomson_edge_Te"] = np.empty(0, dtype=object)
                 row["thomson_edge_ne"] = np.empty(0, dtype=object)
                 continue
-            row["thomson_edge_times"] = times_ms.astype(np.float32)
+            row["thomson_edge_times"] = times_ms
         else:
             row[f"thomson_{tag}_times"] = tt * MS
         row[f"thomson_{tag}_Te"] = _ragged(te)
@@ -168,6 +175,8 @@ def main() -> int:
                     help="explicit shot numbers (overrides --pool / --start / --shots)")
     ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--out", default=str(fair_mast_dir()))
+    ap.add_argument("--edge-clock", choices=("training", "overlap"), default="training",
+                    help="edge Thomson clock rule (see one_shot); training reproduces the training rows")
     args = ap.parse_args()
 
     import s3fs
@@ -186,13 +195,15 @@ def main() -> int:
             ok += 1
             continue
         try:
-            row = one_shot(fs, shot, static)
+            row = one_shot(fs, shot, static, args.edge_clock)
         except Exception as e:
             print(f"  [{shot}] FAILED {type(e).__name__}: {e}", flush=True)
             continue
         if row is None:
             continue
-        pd.DataFrame([{k: _cell(v) for k, v in row.items()}]).to_parquet(dest)
+        part = dest.with_name(dest.name + ".part")
+        pd.DataFrame([{k: _cell(v) for k, v in row.items()}]).to_parquet(part)
+        part.replace(dest)  # atomic: a killed run never leaves a half-written shot
         ok += 1
         T = len(row["efit_times"])
         print(f"  [{shot}] {T:4d} frames  psi {row['efit_psirz'].shape}  "

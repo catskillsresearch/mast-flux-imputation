@@ -35,8 +35,8 @@ encode the probes; only the model is probe-free. `pipeline/datasets.inputs_only(
    shots (3,258 contributing shots, 211,534 frames, minus the 325 archive-validation shots).
 2. The 335 no-plasma shots of the pool are removed before quality control; the $|I_p|$ window is
    fixed at 328.7293519 kA.
-3. Loss weights, early stopping and checkpoint selection: archive validation (`archval100` for the
-   objective $J$, all 325 shots for the selection score).
+3. Loss weights, early stopping and checkpoint selection: archive validation (`archval100` for both
+   the objective $J$ and the selection score).
 4. The soft read-outs use the vessel-envelope mask of the scoring code where no EFIT++ LCFS exists.
 
 ## 5. What the model was evaluated on

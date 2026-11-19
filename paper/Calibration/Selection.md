@@ -13,7 +13,7 @@ Table: Curve-distance weight against the best validation objective $J$.
 Table: Training records of the five members. "Returns to best weights" counts the spike guard.
 
 **Selection.** For $k=1,2,3$ the ensemble of the five members' $k$-th best EMA states (by $J$) is
-formed. The first $k$ whose archive-validation score $S$ (all 325 shots) reaches the fixed
+formed. The first $k$ whose archive-validation score $S$ on `archval100` reaches the fixed
 threshold 0.934308 is used:
 
 @import "../generated/model_selection.md"

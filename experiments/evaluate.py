@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
+from pipeline.paths import output_dir
 from experiments.common import EXP, REPO, assert_safe
 
 E5_MAPS = EXP / "E5" / "maps.json"
@@ -19,7 +20,7 @@ E5_MAPS = EXP / "E5" / "maps.json"
 
 def osf_for(split: str, keys: list[str], workers: int = 8) -> dict:
     from pipeline.predict import run_osf
-    return run_osf(split, keys, REPO / "outputs" / "cache" / "osf" / split, workers)
+    return run_osf(split, keys, output_dir() / "cache" / "osf" / split, workers)
 
 
 def e5_apply(q, b):
@@ -87,7 +88,7 @@ def predict_split(split: str, out_npz: Path, *, members=None, shipped: bool = Fa
 
 def audit(pred: Path, tag: str, workers: int = 8) -> dict:
     from pipeline import audit as A
-    out = REPO / "outputs" / "audit" / tag
+    out = output_dir() / "audit" / tag
     if not (out / "summary.json").is_file():
         A.run(pred, tag, None, workers)
     return json.loads((out / "summary.json").read_text())
@@ -100,5 +101,5 @@ def compare_table(old_tag: str, new_tag: str) -> str:
     from pipeline import audit as A
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        A.compare(REPO / "outputs" / "audit" / old_tag, REPO / "outputs" / "audit" / new_tag)
+        A.compare(output_dir() / "audit" / old_tag, output_dir() / "audit" / new_tag)
     return buf.getvalue()

@@ -1,11 +1,11 @@
 """Common training data for all arms: cleaned pool, fixed |Ip| window, PCA basis, splits.
 
-* pool = sealed-80 split minus the 349 no-plasma shots (outputs/compat/no_plasma.json);
+* pool = sealed-80 split minus the no-plasma shots (<MFI_OUTPUT_DIR>/compat/no_plasma.json);
 * QC recomputed on that pool (MAD rule); |Ip| window fixed at 328.7293519015368 kA;
 * PCA K=60 (shot-balanced <= 200k frames, randomized SVD seed 42);
 * archive validation = first 10 % of the contributing shots after random.Random(42).shuffle;
   archval100 / select30 = its first 100 / 30 shots; osftrain200 = 200 training shots (seed 43).
-Writes outputs/experiments/common/data.npz and data/fair_mast/experiment_splits_seed42.json.
+Writes <MFI_EXP_DIR>/common/data.npz and the splits JSON (MFI_SPLITS_JSON; defaults under outputs/ and data/fair_mast/).
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ import numpy as np
 
 from experiments.common import COMMON, LAB_CACHE, REPO, SHIPPED_IP_LO, SPLITS_JSON, assert_safe
 from models.m9 import train as T
+from pipeline.paths import output_dir
 from models.m9.features import IP_COL
 
 
@@ -25,7 +26,7 @@ def main() -> dict:
     out = assert_safe(COMMON)
     out.mkdir(parents=True, exist_ok=True)
     sealed, pool = T.split(LAB_CACHE)
-    nop = set(json.loads((REPO / "outputs/compat/no_plasma.json").read_text())["no_plasma_keys"])
+    nop = set(json.loads((output_dir() / "compat" / "no_plasma.json").read_text())["no_plasma_keys"])
     pool2 = [k for k in pool if k not in nop]
     keep, thr = T.qc_keep(LAB_CACHE, pool2)
     ship = set((REPO / "data/fair_mast/mast_qc_keep.txt").read_text().split())

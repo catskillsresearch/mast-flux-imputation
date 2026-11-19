@@ -9,9 +9,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 LAB_CACHE = Path(os.environ.get("MFI_FEATURE_CACHE",
                                 "/media/catskills/CRC_FUSION_LAB/fusion-equilibrium-challenge/cache/mast_features_v1"))
-EXP = REPO / "outputs" / "experiments"
+EXP = Path(os.environ.get("MFI_EXP_DIR", REPO / "outputs" / "experiments"))
 COMMON = EXP / "common"
-SPLITS_JSON = REPO / "data" / "fair_mast" / "experiment_splits_seed42.json"
+SPLITS_JSON = Path(os.environ.get("MFI_SPLITS_JSON", REPO / "data" / "fair_mast" / "experiment_splits_seed42.json"))
 SHIPPED_IP_LO = 328.7293519015368
 SHIPPED_WEIGHTS = REPO / "models" / "m9" / "weights"
 MEMBER_SEEDS = (101, 202, 303)

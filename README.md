@@ -58,6 +58,21 @@ Or point at existing copies with `FAIR_MAST_DIR`, `FAIR_MAST_LABELS_DIR` or a la
 `CATSKILLS_FUSION_LAB` (see `pipeline/paths.py`). All data, labels, caches, weights and outputs are
 git-ignored.
 
+## Reproduce end to end
+
+```bash
+bash scripts/run_xcheck.sh            # `make all` as the systemd user unit mfi-xcheck
+bash scripts/run_xcheck.sh status     # work/xcheck/STATUS.json: current step, counts, training stages
+make smoke                            # or any single step; finished steps are skipped
+```
+
+The `Makefile` runs the whole chain from the FAIR-MAST shot list: download, labels, features,
+no-plasma scan, split/QC/PCA, a feature diff against an existing data copy, a smoke check of the
+current model on the fresh rows, the weight sweep, five seeds, selection, scoring and a comparison
+with the current model. Settings are in `workflow/config.mk`; outputs go to `work/xcheck/`
+(git-ignored). Steps, the data preparation rules (clocks, grids, edge Thomson, frame windows,
+no-plasma removal) and disk and time estimates are in [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
 ## Train
 
 ```bash

@@ -34,7 +34,8 @@ A_MINOR = 0.5
 
 
 def load_scalars(keys, ids, fi) -> np.ndarray:
-    lab = REPO / "data" / "fair_mast" / "labels"
+    from pipeline.paths import fair_mast_labels_dir
+    lab = fair_mast_labels_dir()
     out = np.full((len(ids), len(SCAL)), np.nan, np.float32)
     for s, k in enumerate(keys):
         p = lab / f"{k}.npz"

@@ -24,6 +24,7 @@ models/m9/weights/
 
 # run outputs
 outputs/
+work/
 *.log
 
 # python / tooling

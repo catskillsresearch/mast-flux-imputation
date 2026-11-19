@@ -10,7 +10,7 @@ by `bash scripts/run_e6.sh`). The sealed holdout and the three validation shots 
 * The 335 no-plasma shots of the pool are removed; quality control keeps 3,280 shots.
 * $|I_p|$ window fixed at 328.7293519 kA: 3,258 shots contribute 211,534 frames.
 * Archive validation: 10% of the contributing shots after a seed-42 shuffle (325 shots).
-  `archval100`, its first 100 shots, carries the validation objective $J$; all 325 carry the
+  `archval100`, its first 100 shots, carries the validation objective $J$ and the
   selection score $S$.
 * One 60-mode PCA basis and one set of feature statistics, fitted on the training shots.
 
