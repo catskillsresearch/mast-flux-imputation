@@ -45,6 +45,9 @@ def status_update(stage: str, **kw) -> None:
     f = EXP / "STATUS.json"
     st = json.loads(f.read_text()) if f.is_file() else {"stages": {}}
     rec = st["stages"].get(stage, {})
+    if kw.get("state") == "running":  # a fresh attempt: drop fields left by an earlier failed attempt
+        for k in ("error", "failed_stage", "seconds", "finished"):
+            rec.pop(k, None)
     rec.update(kw)
     rec["updated"] = time.strftime("%Y-%m-%d %H:%M:%S %Z")
     st["stages"][stage] = rec
