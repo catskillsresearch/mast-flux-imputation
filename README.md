@@ -230,6 +230,34 @@ Why not the M9 training log's "sealed R² = 0.378"? That number is a pixel $R^2$
 8,161 EFIT slices of the 80 shots (ramps and limited phases, plus the QC-quarantined outlier shot
 27373). Re-measured here: 0.378687 (0.733818 without 27373).
 
+### 8.1 FAIR-MAST-only retraining (E1–E5)
+
+Protocol fixed in advance in `docs/TRAINING_REGIME.md` §9; run with `bash scripts/run_experiments.sh`
+(about 2.5 h on one RTX 5060 Ti); outputs in `outputs/experiments/`, paper Section 10.6. E1 = shipped
+recipe (coefficient MSE) on the cleaned pool; E2 = + boundary band; E3 = + scalar heads on EFIT++
+q95, βN, axis, ℓi; E4 = + critical-point and temporal terms (final pick, lowest route score on the
+archive validation split); E5 = OSF q95/βN read-out maps fitted to EFIT++ on 200 training shots
+(replacing c\*, s\*). Nothing in E1–E5 uses FEC labels or leaderboard probes.
+
+| sealed-80 holdout, scored once | **S** | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency | tip gap ≥ 50 mm | p95 Hausdorff (mm) |
+|---|---|---|---|---|---|---|---|---|
+| shipped M9 + OSF | **0.862677** | 0.997771 | 0.342298 | 0.394260 | 0.945207 | 0.820703 | 24.2% | 108.6 |
+| E1 (MSE only) | **0.874196** | 0.997808 | 0.444019 | 0.391840 | 0.944528 | 0.841297 | 24.9% | 104.2 |
+| E4 (route-guided, pick) | **0.931421** | 0.997837 | 0.916470 | 0.689018 | 0.945939 | 0.838024 | 23.1% | 97.9 |
+| shipped OSF | **0.618634** | 0.917210 | 0.164457 | 0.379077 | 0.734036 | 0.000000 | 90.5% | 585.7 |
+| OSF + E5 maps | **0.640558** | 0.917210 | 0.444019 | 0.391840 | 0.734036 | 0.000000 | 90.5% | 585.7 |
+
+| FEC demo (3 shots, 115 frames) | **S** | R²ψ | R²q95 | R²βN | 1−D_LCFS | Consistency | tip gap ≥ 50 mm | p95 Hausdorff (mm) |
+|---|---|---|---|---|---|---|---|---|
+| shipped M9 + OSF | **0.871921** | 0.998555 | 0.818390 | 0.594122 | 0.955503 | 0.606137 | 20.0% | 64.8 |
+| E1 (MSE only) | **0.863300** | 0.998826 | 0.635596 | 0.576591 | 0.949921 | 0.640195 | 31.3% | 87.5 |
+| E4 (route-guided, pick) | **0.867116** | 0.998764 | 0.975269 | 0.417430 | 0.952618 | 0.590407 | 22.6% | 80.6 |
+
+E4 beats the shipped hybrid on the holdout and is slightly below it on the three demo shots, where
+the shipped scalar read-out was tuned. The gain over E1 comes from the trained scalar heads; the
+geometric route terms did not improve the boundary beyond MSE (route score E4 0.9906 vs E1 0.9742
+relative to shipped on the holdout). Tables: `python scripts/make_experiment_tables.py`.
+
 ## 9. Verification
 
 | check | result |
