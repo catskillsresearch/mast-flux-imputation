@@ -19,6 +19,7 @@ data/fec/demo/
 data/fair_mast/parquet/
 data/fair_mast/labels/
 data/fair_mast/cache/
+data/fair_mast/validation/
 models/m9/weights/
 
 # run outputs

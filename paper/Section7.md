@@ -1,5 +1,6 @@
-# Reproducibility and limitations
+# Reproducibility, provenance and limitations
 
+- [Commands](Section7/Commands.md)
+- [Data provenance](Section7/Provenance.md)
 - [Verification](Section7/Verification.md)
-- [Data use and tuning facts](Section7/Provenance.md)
 - [Limitations](Section7/Limitations.md)

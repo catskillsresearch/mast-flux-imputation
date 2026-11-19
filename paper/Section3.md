@@ -1,14 +1,13 @@
-# Archive-trained flux model (M9)
+# Model
 
-M9 (`models/m9`, checkpoints `CRC_FEQ_mast_M9_win50_i{101,202,303}.pt`) is a data-driven
-estimator of $\psi$ learned from FAIR-MAST EFIT++ reconstructions. It produces only the flux map;
-in the hybrid mode $q_{95}$ and $\beta_N$ come from OSF.
+The model maps the measured inputs of each EFIT frame to 60 principal-component coefficients of
+the EFIT++ flux and to five scalars. Five networks of identical architecture, differing only in
+their initialisation seed, are averaged.
 
-![M9 architecture: measured inputs are augmented in time, passed through two residual encoders joined by a zero-initialised gate, mapped linearly to 60 PCA coefficients and reconstructed to the $65\times65$ grid; three seeds are averaged.](figures/diag_m9_arch.png){#fig:m9}
+![The model: per-frame inputs are augmented in time, passed through a present-frame and a context residual encoder joined by a zero-initialised gate, and mapped linearly to 60 PCA coefficients, reconstructed on the $65\times65$ grid, and to five scalar heads; five seeds are averaged. Training adds per-shot curve distances computed through soft read-outs of the predicted flux.](figures/diag_model_arch.png){#fig:arch}
 
-- [Model and loss](Section3/Loss.md)
 - [PCA basis of EFIT++ flux](Section3/PCABasis.md)
 - [Features and temporal context](Section3/Features.md)
-- [Network](Section3/Network.md)
-- [Training](Section3/Training.md)
+- [Network and scalar heads](Section3/Network.md)
+- [Differentiable shape read-outs](Section3/Readouts.md)
 - [Ensemble](Section3/Ensemble.md)

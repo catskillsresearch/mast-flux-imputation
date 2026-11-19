@@ -10,8 +10,8 @@ Per shot it reads the Zarr groups efm (EFIT++: psirz on a doubled 129-column R g
 which the 65 finite columns are kept), amc (coil and plasma currents, resampled onto the
 FEC 30,000-sample 0.2 ms magnetics grid), ayc (core Thomson) and aye (edge Thomson),
 and writes one parquet row in the mast_public_test column layout *plus* the label
-efit_psirz. Static per-machine tables (coil geometry, Thomson chord positions) are copied
-from one released FEC test row -- these are given inputs, not labels.
+efit_psirz. The output grid (``efit_grid_R``, ``efit_grid_Z``) is the shot's own efm ``r`` / ``z``.
+Everything in a row comes from FAIR-MAST; no other data source is read.
 
 Caveat (paraphrasing the original docstring): of ~4,566 archive shots carrying both EFIT and
 core Thomson the challenge curated 2,416, so part of this pool is the challenge's hidden test
@@ -32,7 +32,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from pipeline.paths import assert_not_on_lab, fair_mast_dir, fec_public_test_dir  # noqa: E402
+from pipeline.paths import assert_not_on_lab, fair_mast_dir  # noqa: E402
 
 ENDPOINT = "https://s3.echo.stfc.ac.uk"
 BUCKET = "mast/level1/shots"
@@ -42,16 +42,11 @@ COILS = ["efps", "sol", "tf"] + [f"p{i}{ab}" for i in range(2, 7) for ab in ("l"
 # magnetics on one canonical grid regardless of the shot's own acquisition length.
 MS = 1000.0
 MAG_GRID = np.linspace(-2000.0, 3999.7998, 30000)
-STATIC = ["efit_grid_R", "efit_grid_Z", "coil_name", "coil_input_column", "coil_R",
-          "coil_Z", "coil_width", "coil_height", "coil_angle1", "coil_angle2",
-          "thomson_chord_name", "thomson_chord_R", "thomson_chord_Z"]
 
 
 def static_row() -> dict:
-    """Per-machine geometry, identical across MAST shots; taken from a released row."""
-    f = sorted(glob.glob(f"{fec_public_test_dir()}/*.parquet"))[0]
-    d = pd.read_parquet(f, columns=STATIC)
-    return {c: d[c].iloc[0] for c in STATIC}
+    """No external per-machine tables: the grid is read per shot from efm (see ``one_shot``)."""
+    return {}
 
 
 def thomson_times_to_ms(tt, efit_times_ms) -> np.ndarray | None:
@@ -112,6 +107,8 @@ def one_shot(fs, shot: int, static: dict) -> dict | None:
         return None
 
     row: dict = {"source": "MAST", **static}
+    row["efit_grid_R"] = np.asarray(efm["r"], np.float64)
+    row["efit_grid_Z"] = np.asarray(efm["z"], np.float64)
     row["efit_times"] = (np.asarray(efm["time"], np.float64) * MS).astype(np.float32)
     row["efit_psirz"] = psi
     if len(psi) != len(row["efit_times"]):
@@ -174,6 +171,8 @@ def main() -> int:
     ap.add_argument("--pool", default=str(ROOT / "data" / "fair_mast" / "mast_pool3.txt"),
                     help="shot ids with both efm and ayc (from the FAIR-MAST source index)")
     ap.add_argument("--shots", type=int, default=4)
+    ap.add_argument("--keys", type=int, nargs="*", default=[],
+                    help="explicit shot numbers (overrides --pool / --start / --shots)")
     ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--out", default=str(fair_mast_dir()))
     args = ap.parse_args()
@@ -181,7 +180,7 @@ def main() -> int:
     import s3fs
     fs = s3fs.S3FileSystem(anon=True, endpoint_url=ENDPOINT)
     pool = [int(x) for x in Path(args.pool).read_text().split()]
-    todo = pool[args.start:args.start + args.shots]
+    todo = args.keys or pool[args.start:args.start + args.shots]
     out = assert_not_on_lab(Path(args.out))
     out.mkdir(parents=True, exist_ok=True)
     static = static_row()

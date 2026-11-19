@@ -27,10 +27,14 @@ import numpy as np
 from models.io import cut_efit_frames, psi_stack, row_from_parquet
 from pipeline.paths import DATA, fair_mast_dir, fair_mast_labels_dir, fec_demo_dir, fec_public_test_dir
 
-SPLITS = ("demo", "holdout", "public_test", "archval100", "select30", "osftrain200")
+SPLITS = ("demo", "demo_fec", "holdout", "public_test", "archval100", "select30", "osftrain200")
 EXP_SPLITS_JSON = DATA / "fair_mast" / "experiment_splits_seed42.json"
 INPUT_EFIT = ("efit_times", "efit_grid_R", "efit_grid_Z")
 HOLDOUT_JSON = DATA / "fair_mast" / "holdout_seed42.json"
+# Held-out MAST validation shots, read from FAIR-MAST (data/fair_mast/ingest.py --keys ... and
+# fetch_efit_labels.py --shots ..., both into data/fair_mast/validation/).
+VALIDATION_SHOTS = (28348, 28350, 28351)
+VALIDATION_DIR = DATA / "fair_mast" / "validation"
 
 
 @dataclass
@@ -61,6 +65,8 @@ def holdout_keys() -> list[str]:
 
 def split_keys(split: str) -> list[str]:
     if split == "demo":
+        return [f"mast_shot_{n}" for n in VALIDATION_SHOTS]
+    if split == "demo_fec":
         return sorted(p.stem for p in fec_demo_dir().glob("mast_shot_*.parquet"))
     if split == "holdout":
         return holdout_keys()
@@ -71,7 +77,12 @@ def split_keys(split: str) -> list[str]:
     raise ValueError(f"unknown split {split!r}; have {SPLITS}")
 
 
-def load_demo(key: str) -> Shot:
+def load_demo(key: str) -> Shot | None:
+    """Validation shot from FAIR-MAST (ingest + efm sidecar), diverted EFIT slices."""
+    return load_holdout(key, VALIDATION_DIR / "parquet", VALIDATION_DIR / "labels")
+
+
+def load_demo_fec(key: str) -> Shot:
     p = fec_demo_dir() / f"{key}.parquet"
     row = row_from_parquet(p)
     T = len(row["efit_times"])
@@ -79,10 +90,10 @@ def load_demo(key: str) -> Shot:
     return Shot(key, str(p), inputs_only(row), gt, {"source": "FEC starter kit (labelled demo)"})
 
 
-def load_holdout(key: str) -> Shot | None:
+def load_holdout(key: str, pdir: Path | None = None, ldir: Path | None = None) -> Shot | None:
     """FEC-protocol re-cut of one sealed FAIR-MAST shot; ``None`` if it has no diverted slice."""
-    p = fair_mast_dir() / f"{key}.parquet"
-    lab_p = fair_mast_labels_dir() / f"{key}.npz"
+    p = (pdir or fair_mast_dir()) / f"{key}.parquet"
+    lab_p = (ldir or fair_mast_labels_dir()) / f"{key}.npz"
     if not lab_p.is_file():
         raise FileNotFoundError(f"{lab_p} missing; run data/fair_mast/fetch_efit_labels.py")
     lab = dict(np.load(lab_p))
@@ -117,7 +128,8 @@ def load_public_test(key: str) -> Shot:
 def load_shot(split: str, key: str) -> Shot | None:
     if split in ("archval100", "select30", "osftrain200"):  # FAIR-MAST archive shots, FEC protocol cut
         return load_holdout(key)
-    return {"demo": load_demo, "holdout": load_holdout, "public_test": load_public_test}[split](key)
+    return {"demo": load_demo, "demo_fec": load_demo_fec, "holdout": load_holdout,
+            "public_test": load_public_test}[split](key)
 
 
 def load_split(split: str, limit: int = 0) -> tuple[list[Shot], list[str]]:

@@ -1,11 +1,13 @@
 # Ensemble
 
-Three members differ only in their initialisation seed $s\in\{101,202,303\}$ (the data split is
-shared). The prediction is the mean of the reconstructed maps,
+Five members differ only in their initialisation seed $s\in\{101,202,303,404,505\}$; the data, split,
+basis and feature statistics are shared. The flux prediction is the mean of the reconstructed maps
+and the scalar prediction the mean of the heads,
 
 $$
-\hat\psi_{\rm M9} = \frac13\sum_{s\in\{101,202,303\}}\Big(\mu+C^{\top}f_s(\tilde x)\Big).
+\hat\psi = \frac15\sum_{s}\Big(\mu+C^{\top}f_s(\tilde x)\Big),\qquad
+\hat u_j = \frac15\sum_s \hat u_{j,s}.
 $$
 
-Each checkpoint stores its own $\mu$, $C$ and feature statistics, so the average is taken in
-$\psi$-space.
+Which training state of each member enters the ensemble is set by the selection rule of the
+Calibration section.

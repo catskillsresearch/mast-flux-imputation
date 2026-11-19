@@ -12,5 +12,5 @@ $$
 This is the proper orthogonal decomposition of the flux ensemble [@berkooz1993]. Because $C$ has
 orthonormal rows, MSE on $z$ equals pixel MSE of the *projected* target. The basis is fitted with
 randomized SVD [@halko2011] (scikit-learn [@pedregosa2011], seed 42, three power iterations) on at
-most 200,000 frames drawn shot-balanced from the training shots, after the $|I_p|$ window of the
-next note. The PCA basis and mean are therefore built from FAIR-MAST EFIT++ labels (Section 9.2).
+most 200,000 frames drawn shot-balanced from the training shots after the $|I_p|$ window, so the
+basis and its mean are built from FAIR-MAST EFIT++ labels of the training shots only.
