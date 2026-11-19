@@ -17,6 +17,7 @@ th { background:#ece7dc; font-weight:600; }
 .card h3 { margin:0 0 6px; font-size:15px; }
 .card .big { font-size:26px; font-weight:650; }
 .row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.row4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; }
 .row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .plot { background:#fff; border:1px solid var(--line); border-radius:6px; min-height:300px; }
 .scrub { display:flex; gap:12px; align-items:center; margin:8px 0 14px; background:#fff; border:1px solid var(--line); border-radius:6px; padding:8px 12px; }
