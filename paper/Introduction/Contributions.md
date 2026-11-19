@@ -15,5 +15,7 @@
 5. A reproducible build: data acquisition, ingest, quality control, holdout construction with a
    disjointness proof, training, prediction, scoring and a browser viewer (Section 5), with measured
    results on a sealed holdout re-derived from saved prediction files (Section 8).
-6. A record of the data each component was trained or tuned on (Section 9.2), and a planned
-   FAIR-MAST-only regime that tests the thesis directly (Section 10).
+6. A record of the data each component was trained or tuned on (Section 9.2), and a
+   FAIR-MAST-only training regime that tests the thesis directly: MSE-only and route-guided M9
+   ensembles and a FAIR-MAST-only OSF read-out, with the route-guided pick reaching $S=0.931421$ on
+   the sealed holdout against $0.862677$ for the shipped hybrid (Section 10.6).

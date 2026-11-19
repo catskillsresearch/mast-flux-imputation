@@ -13,5 +13,5 @@ The two models address different parts of the objective, and neither is trained 
   ($R^2_\psi\ge0.9976$), not route quantities.
 
 The audit of Section 7.2 is the formal version of the viewer inspection. It now scores both models
-(Section 7.5); putting $\mathcal R$ into training and checkpoint selection is the planned regime of
-Section 10.
+(Section 7.5); putting $\mathcal R$ into training and checkpoint selection is the regime of
+Section 10.6.

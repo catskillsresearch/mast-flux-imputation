@@ -19,10 +19,11 @@ holdout $S$ and on the route metrics.
   distances on the holdout but increased the O- and X-point offsets and the flip rate, and the
   composite $\mathcal R$ of E4 (0.9906) is slightly worse than that of E1 (0.9742). Route-based
   checkpoint selection mostly chose the best-MSE state.
-* *Generalisation.* The MSE-only flux generalises well: E1's $R^2_\psi$ on the holdout equals the
-  shipped model's and its $\mathcal R$ is below 1. The degradation from validation shots to
-  holdout seen for the shipped hybrid in Section 7.5 is in its scalar read-out, and FAIR-MAST-only
-  scalars (E5 maps, heads) remove it.
+* *Generalisation.* The MSE-only flux generalises well: E1's $R^2_\psi$ on the holdout matches the
+  shipped model's (0.997808 against 0.997771) and its $\mathcal R$ is below 1. The fall in $S$
+  from validation shots to holdout seen for the shipped hybrid in Section 7.5 comes mostly from its
+  scalar read-out, and FAIR-MAST-only scalars (E5 maps, heads) remove it; the boundary errors grow
+  from validation shots to holdout for every model.
 
 The supported form of the thesis is therefore narrower than H: an MSE fit of the flux leaves the
 customer's score limited by the quantities MSE does not see, here $q_{95}$ and $\beta_N$, and

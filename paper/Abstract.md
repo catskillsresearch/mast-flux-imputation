@@ -17,6 +17,9 @@ frames), OSF reaches $S=0.618634$ and the hybrid M9 + OSF $S=0.862677$ with
 $R^2_\psi=0.997771$. Yet the same hybrid has a top or bottom boundary-tip gap of at least 50 mm in
 24.2% of frames, $R^2=0.577001$ for lower triangularity and $R^2=0.342298$ for $q_{95}$; between
 the three validation shots used for model selection and the holdout its flux score barely moves
-while its boundary and $q_{95}$ errors grow. These measurements are consistent with the hypothesis but do not test
-it; we describe an automated observable audit, implemented, and a FAIR-MAST-only training regime,
-planned, that compares MSE-only and observable-guided training on the same data and holdout.
+while its boundary and $q_{95}$ errors grow. An automated observable audit measures the route for every frame, and a FAIR-MAST-only
+training regime compares MSE-only and observable-guided training on the same data and holdout.
+Adding the scalar observables to training raises holdout $S$ from 0.874196 (MSE only) to
+0.931421, above the shipped hybrid, with no use of challenge labels or leaderboard probes; the
+geometric route terms tried (boundary band, soft LCFS, critical points) do not improve the
+boundary beyond coefficient MSE.

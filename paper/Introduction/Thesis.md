@@ -18,6 +18,8 @@ We treat this as a hypothesis. Section 7 defines the objective, and Section 7.5 
 evidence available from the existing models, which is consistent with it: the hybrid model's
 $R^2_\psi$ is above 0.997 on both the validation shots and a sealed holdout, while its boundary-tip
 and $q_{95}$ errors are large and grow on the holdout, and lower triangularity is poorly reproduced
-on both. The direct test, training the
-same network on the same FAIR-MAST data with and without observable terms and scoring both once on
-the same sealed holdout, is planned (Section 10).
+on both. The direct test trains the
+same network on the same FAIR-MAST data with and without observable terms and scores both once on
+the same sealed holdout (Section 10.6). Training on the scalar observables raises the holdout score
+from $S=0.874196$ to $0.931421$; the geometric terms as implemented do not improve the boundary
+beyond coefficient MSE.

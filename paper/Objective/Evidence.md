@@ -32,8 +32,7 @@ Three observations bear on the hypothesis.
 These observations are consistent with H but do not test it. The validation shots are three
 consecutive shots, so their pooled $R^2$ values are noisy: $R^2(Z_{\rm axis})=-60.084051$ there
 reflects a tiny between-shot variance, and several consistency terms are *higher* on the holdout
-(Cons 0.606137 versus 0.820703). The two populations also differ in shot mix. No model trained with
-route terms exists yet, and M9's training logs contain no route quantities. The direct test is the
-FAIR-MAST-only regime of Section 10: the same network, data, seeds and holdout, trained once with
+(Cons 0.606137 versus 0.820703). The two populations also differ in shot mix. The shipped M9's training
+logs contain no route quantities. The direct test is the FAIR-MAST-only regime of Section 10.6: the same network, data, seeds and holdout, trained once with
 coefficient MSE alone and once with route terms in the loss and in checkpoint selection, compared
 term by term with this audit.
