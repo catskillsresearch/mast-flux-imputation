@@ -13,8 +13,11 @@ Late-shot weighting: frame weight 1 + alpha_j * clip((t_frac - 0.8) / 0.2, 0, 1)
 betaN and 2 for the other series; series weights omega = 2 for betaN, delta_top, delta_bot, else 1.
 Schedule: AdamW 1e-3, ReduceLROnPlateau on the validation objective J (factor 0.5, patience 4,
 min 2e-5), EMA of the weights (decay 0.998 per step); validation on the EMA weights every epoch.
-Early stopping: stop when J (archval100, FAIR-MAST) has not improved by more than 0.2 % relative for
-PATIENCE = 20 epochs (at least 30 epochs, at most 300). The three best EMA states by J are kept.
+Early stopping: stop when J (archval100, FAIR-MAST) has not improved on its best by more than 0.2 %
+relative for PATIENCE = 20 epochs AND J is no longer falling (less than 1 % lower than five epochs
+earlier); at least 30, at most 300 epochs. Spike guard: if J exceeds 1.2 x the best J, the weights
+and the EMA roll back to the best EMA state and the learning rate is halved. The three best EMA
+states by J are kept.
 Every epoch writes last.pt, so a run resumes after a crash.
 """
 from __future__ import annotations
@@ -47,6 +50,7 @@ DIL = 2  # region = EFIT LCFS interior dilated by DIL cells
 SHOTS_PER_STEP, MAX_FRAMES = 32, 128
 PATIENCE, TOL, MIN_EPOCHS, MAX_EPOCHS = 20, 2e-3, 30, 300
 EMA_DECAY = 0.998
+SPIKE = 1.2
 RANGE_FLOOR = 0.25  # per-shot range floor, in units of the series' global std
 
 
@@ -507,10 +511,24 @@ def train(out_dir: Path, seed: int, w: dict, D: Data, max_epochs=MAX_EPOCHS, min
         ob = objective(z, h, D)
         J = ob["J"]
         lr = opt.param_groups[0]["lr"]
-        sched.step(J)
+        rolled = False
+        if state["top"] and J > SPIKE * state["top"][0]["J"]:
+            best = torch.load(out_dir / state["top"][0]["file"], map_location="cpu", weights_only=False)
+            model.load_state_dict(best)
+            ema = {k: v.detach().clone().float().to(dev) for k, v in best.items()}
+            for g in opt.param_groups:
+                g["lr"] = max(g["lr"] * 0.5, 2e-5)
+            state.setdefault("rollbacks", []).append(ep)
+            rolled = True
+            log(f"[e6] {out_dir.name} ep {ep}: J {J:.5f} > {SPIKE} x best; rolled back to epoch "
+                f"{state['top'][0]['ep']} and halved the learning rate")
+        else:
+            sched.step(J)
         rec = {"ep": ep, "lr": lr, **ob, **{f"tr_{k}": v / n_steps for k, v in acc.items()}}
         state["hist"].append(rec)
         ema_cpu = {k: v.detach().cpu().clone() for k, v in ema.items()}
+        if rolled:
+            ema_cpu = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
         # top-3 by raw J
         top = state["top"]
         if len(top) < 3 or J < max(t["J"] for t in top):
@@ -529,7 +547,9 @@ def train(out_dir: Path, seed: int, w: dict, D: Data, max_epochs=MAX_EPOCHS, min
         else:
             state["bad"] += 1
         state["ep"] = ep + 1
-        if state["bad"] >= patience and ep + 1 >= min_epochs:
+        h = state["hist"]
+        falling = len(h) >= 6 and J < h[-6]["J"] * (1 - 5 * TOL)
+        if state["bad"] >= patience and ep + 1 >= min_epochs and not falling:
             state["stopped"] = ep
         torch.save({"model": model.state_dict(), "opt": opt.state_dict(), "sched": sched.state_dict(),
                     "ema": ema_cpu, "rng": rng.bit_generator.state, "torch_rng": torch.get_rng_state(),
@@ -540,7 +560,8 @@ def train(out_dir: Path, seed: int, w: dict, D: Data, max_epochs=MAX_EPOCHS, min
             f"dt {ob['nrmse_tri_top']:.4f} db {ob['nrmse_tri_bot']:.4f} lcfs {ob['lcfs']:.4f} | "
             + " ".join(f"{k}={v / n_steps:.3g}" for k, v in acc.items() if v))
         if state["stopped"] is not None:
-            log(f"[e6] {out_dir.name} early stop at epoch {ep} (no >{TOL:.1%} gain in J for {patience} epochs)")
+            log(f"[e6] {out_dir.name} early stop at epoch {ep} (no >{TOL:.1%} gain on the best J for {patience} "
+                f"epochs and J no longer falling)")
             break
     if state["stopped"] is None:
         state["stopped"] = state["ep"] - 1
@@ -550,7 +571,7 @@ def train(out_dir: Path, seed: int, w: dict, D: Data, max_epochs=MAX_EPOCHS, min
             "temporal_mode": "smoothdiff", "feature_clip": 10.0, "init_seed": int(seed), "weights": w,
             "scalar_mean": D.s_mean, "scalar_std": D.s_std, "history": state["hist"], "top": state["top"],
             "best_mse_epoch": state["best_mse_ep"], "stopped_epoch": state["stopped"],
-            "best_J": state["best_J"], "best_J_epoch": state["best_J_ep"],
+            "best_J": state["best_J"], "best_J_epoch": state["best_J_ep"], "rollbacks": state.get("rollbacks", []),
             "train_seconds": round(time.perf_counter() - t0, 1)}
     torch.save(meta, out_dir / "meta.pt")
     return meta

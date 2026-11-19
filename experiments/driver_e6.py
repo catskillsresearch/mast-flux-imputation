@@ -140,7 +140,7 @@ def _st_member(seed):
     w = rj(E6 / "sweep_choice.json")["w"]
     D = _data()
     meta = train(E6 / f"m{seed}", seed, w, D, log=log)
-    wj(E6 / f"m{seed}" / "summary.json", {k: meta[k] for k in ("stopped_epoch", "best_J", "best_J_epoch", "top",
+    wj(E6 / f"m{seed}" / "summary.json", {k: meta.get(k) for k in ("stopped_epoch", "best_J", "best_J_epoch", "top", "rollbacks",
                                                               "best_mse_epoch", "train_seconds", "weights")})
 
 
