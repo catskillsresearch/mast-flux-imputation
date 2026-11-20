@@ -23,7 +23,7 @@ from models.m9 import train as T  # noqa: E402
 from models.m9.features import IP_COL  # noqa: E402
 from pipeline.paths import assert_not_on_lab, fair_mast_dir, output_dir  # noqa: E402
 
-SHIPPED_IP_LO = 328.7293519015368
+IP_LO = 328.7293519015368
 
 
 def main() -> int:
@@ -53,7 +53,7 @@ def main() -> int:
         if p.exists():
             with np.load(p) as z:
                 ip = np.abs(z["X"][:, IP_COL].astype(float))
-            ipmax[k], nwin[k] = float(np.nanmax(ip)), int((ip >= SHIPPED_IP_LO).sum())
+            ipmax[k], nwin[k] = float(np.nanmax(ip)), int((ip >= IP_LO).sum())
     odd_keep = [k for k in keep if k in odd]
     res = {"n_ingest": len(rows), "n_no_plasma": len(odd), "n_no_plasma_in_keep": len(odd_keep),
            "no_plasma_max_ip_kA_max": max(ipmax[k] for k in odd_keep if k in ipmax),

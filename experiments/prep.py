@@ -15,7 +15,7 @@ import time
 
 import numpy as np
 
-from experiments.common import COMMON, LAB_CACHE, REPO, SHIPPED_IP_LO, SPLITS_JSON, assert_safe
+from experiments.common import COMMON, LAB_CACHE, REPO, IP_LO, SPLITS_JSON, assert_safe
 from models.m9 import train as T
 from pipeline.paths import output_dir
 from models.m9.features import IP_COL
@@ -29,7 +29,7 @@ def main() -> dict:
     nop = set(json.loads((output_dir() / "compat" / "no_plasma.json").read_text())["no_plasma_keys"])
     pool2 = [k for k in pool if k not in nop]
     keep, thr = T.qc_keep(LAB_CACHE, pool2)
-    ship = set((REPO / "data/fair_mast/mast_qc_keep.txt").read_text().split())
+    manifest = set((REPO / "data/fair_mast/mast_qc_keep.txt").read_text().split())
     Xs, Ys, ids, fis, keys = [], [], [], [], []
     for key in keep:
         got = T.load_shot(LAB_CACHE, key)
@@ -37,7 +37,7 @@ def main() -> dict:
             continue
         X, Y = got
         n = min(len(X), len(Y))
-        m = np.abs(X[:n, IP_COL].astype(np.float64)) >= SHIPPED_IP_LO
+        m = np.abs(X[:n, IP_COL].astype(np.float64)) >= IP_LO
         if not m.any():
             continue
         Xs.append(X[:n][m])
@@ -73,9 +73,9 @@ def main() -> dict:
                                        "osftrain200": osftrain}, indent=0) + "\n")
     np.savez(out / "data.npz", X=X, Z=Z, ids=ids, fi=fi, keys=np.array(keys),
              pca_mean=pca.mean_.astype(np.float32), pca_components=pca.components_.astype(np.float32),
-             ip_lo=np.float64(SHIPPED_IP_LO), archval=np.array(archval))
+             ip_lo=np.float64(IP_LO), archval=np.array(archval))
     info = {"pool": len(pool), "no_plasma_removed": len(pool) - len(pool2), "qc_keep": len(keep),
-            "qc_keep_minus_shipped": len(set(keep) - ship), "shipped_minus_qc_keep": len(ship - set(keep) - nop),
+            "qc_keep_minus_manifest": len(set(keep) - manifest), "manifest_minus_qc_keep": len(manifest - set(keep) - nop),
             "contributing_shots": len(keys), "frames": int(len(X)), "archval_shots": len(archval),
             "explained": float(pca.explained_variance_ratio_.sum()), "qc_thr": thr, "seconds": round(time.time() - t0, 1)}
     (out / "prep.json").write_text(json.dumps(info, indent=1, default=float) + "\n")

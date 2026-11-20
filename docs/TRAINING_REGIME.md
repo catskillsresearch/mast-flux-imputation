@@ -53,7 +53,7 @@ otherwise.
 | stage | what it does |
 |---|---|
 | `truth` | soft read-outs of every EFIT++ training frame (cached) |
-| `s1`, `sweep` | $w_{cd}\in\{0.01,0.03,0.1,0.3\}$ on seed 101, 40 epochs; lowest $J$ wins (0.01) |
+| `sweep` | $w_{cd}\in\{0.01,0.03,0.1,0.3\}$ on seed 101, 40 epochs; lowest $J$ among settings whose best coefficient MSE is within 10% of the lowest (0.01) |
 | `m101` … `m505` | five members with the chosen weights |
 | `select` | for $k=1,2,3$, the ensemble of the $k$-th best states; the first with archive-validation $S\ge0.934308$ is used (rank 2) |
 | `final` | holdout prediction, scoring and audit |

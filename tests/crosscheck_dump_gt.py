@@ -1,6 +1,6 @@
 """Dump the ground truth of a scored split to one npz so an external scorer can re-score it.
 
-    python tests/crosscheck_dump_gt.py outputs/holdout_hybrid.npz /tmp/holdout_gt.npz
+    python tests/crosscheck_dump_gt.py outputs/compare/holdout_e6.npz /tmp/holdout_gt.npz
 """
 import json
 import sys

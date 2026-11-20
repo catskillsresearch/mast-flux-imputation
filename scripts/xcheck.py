@@ -262,7 +262,7 @@ def _ref(ref_audit: Path, split: str) -> dict:
 
 
 def cmd_smoke(a):
-    from experiments.driver import pred_audit
+    from experiments.evaluate import pred_audit
     files = rj(Path(a.ref_exp) / "select.json")["files"]
     res = {}
     for split in ("holdout", "demo"):

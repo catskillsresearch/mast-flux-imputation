@@ -13,7 +13,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 
-from experiments.common import COMMON, LAB_CACHE, SHIPPED_IP_LO, assert_safe
+from experiments.common import COMMON, LAB_CACHE, IP_LO, assert_safe
 from models.m9.features import IP_COL
 
 PER = COMMON / "route_shots"
@@ -31,7 +31,7 @@ def _one(key: str) -> str:
     from models.m9 import train as T
     X, Y = T.load_shot(LAB_CACHE, key)
     n = min(len(X), len(Y))
-    m = np.abs(X[:n, IP_COL].astype(np.float64)) >= SHIPPED_IP_LO
+    m = np.abs(X[:n, IP_COL].astype(np.float64)) >= IP_LO
     Y = Y[:n][m].astype(np.float64)
     gz, gr = np.meshgrid(A.Z, A.R, indexing="ij")
     pts = np.column_stack([gr.ravel(), gz.ravel()])

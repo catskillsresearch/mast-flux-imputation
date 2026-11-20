@@ -1,7 +1,7 @@
 [project]
 name = "mast-flux-imputation"
 version = "0.1.0"
-description = "MAST poloidal flux imputation in the absence of direct magnetic sensors: OSF forward Grad-Shafranov solver + M9 archive-trained flux predictor, FEC scoring, and a MAST-only browser viewer."
+description = "MAST poloidal flux imputation in the absence of direct magnetic sensors: a flux predictor trained on FAIR-MAST, FEC scoring code, and a MAST viewer."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE" }
@@ -10,7 +10,7 @@ dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",          # elliptic integrals K(k^2), E(k^2); interp1d
     "pyarrow>=14",          # parquet rows
-    "contourpy>=1.2",       # OSF flux-surface tracing + viewer isolines
+    "contourpy>=1.2",       # flux-surface tracing + viewer isolines
     "scikit-image>=0.22",   # FEC scorer LCFS marching squares (organizer pins 0.25.2)
     "torch>=2.2",           # M9 inference / training
     "scikit-learn>=1.3",    # M9 PCA basis + |Ip| 2-means fence (training only)
@@ -26,7 +26,7 @@ fetch = [
 ]
 
 paper = [
-    "matplotlib>=3.8",        # scripts/make_result_figures.py
+    "matplotlib>=3.8",        # scripts/make_model_report.py
 ]
 # The paper build also needs pandoc, latexmk + pdflatex (TeX Live) and graphviz (dot).
 
@@ -35,7 +35,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["models", "models.osf", "models.m9", "pipeline", "app", "app.fec_site"]
+packages = ["models", "models.m9", "pipeline", "app", "app.fec_site"]
 
 [tool.setuptools.package-data]
 "app.fec_site" = ["static/*.css"]

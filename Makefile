@@ -125,7 +125,7 @@ $(STAMP)/smoke: $(STAMP)/features $(STAMP)/validation
 # --- 6. training: truth tables, weight sweep, 5 seeds, checkpoint selection ---------------------
 truth: $(STAMP)/truth
 $(STAMP)/truth: $(STAMP)/route $(STAMP)/smoke
-	$(ST) truth running && $(DRV) truth && $(DRV) s1 && $(ST) truth done && touch $@
+	$(ST) truth running && $(DRV) truth && $(ST) truth done && touch $@
 
 sweep: $(STAMP)/sweep
 $(STAMP)/sweep: $(STAMP)/truth

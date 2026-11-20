@@ -26,7 +26,7 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
-import make_e6_report as R  # noqa: E402  (shared curve-distance code and constants)
+import report_common as R  # noqa: E402  (shared curve-distance code and constants)
 
 plt = R.plt
 RUN = REPO / "outputs" / "experiments" / "E6"

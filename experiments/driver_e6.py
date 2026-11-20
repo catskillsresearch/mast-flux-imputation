@@ -3,9 +3,9 @@
     python -m experiments.driver_e6            # run / resume every stage not yet done
     python -m experiments.driver_e6 --stage m202
 
-Stages: truth -> s1 -> sweep -> m101 m202 m303 m404 m505 -> select -> final. Progress is in
+Stages: truth -> sweep -> m101 m202 m303 m404 m505 -> select -> final. Progress is in
 outputs/experiments/E6/STATUS.json; a stage marked done is skipped, and a training stage resumes
-from its last.pt. The archive objective uses archval100 (FAIR-MAST) only; the three FEC demo shots
+from its last.pt. The archive objective uses archval100 (FAIR-MAST) only; the three validation shots
 and the sealed holdout are touched once, in `final`.
 """
 from __future__ import annotations
@@ -18,12 +18,11 @@ import sys
 import time
 from pathlib import Path
 
-from pipeline.paths import output_dir
 from experiments.common import EXP, REPO
 
 E6 = EXP / "E6"
 SEEDS = (101, 202, 303, 404, 505)
-STAGES = ("truth", "s1", "sweep", *[f"m{s}" for s in SEEDS], "select", "final")
+STAGES = ("truth", "sweep", *[f"m{s}" for s in SEEDS], "select", "final")
 BASE_W = {"w_lcfs": 0.0, "w_b": 3.0, "w_tip": 10.0, "w_c": 1e-3, "w_t": 1.0, "w_s": 3e-3}
 SWEEP = [0.01, 0.03, 0.1, 0.3]  # w_cd; w_lcfs = w_cd / 3
 SWEEP_EPOCHS = 40
@@ -71,54 +70,17 @@ def _data(need_train=True):
 
 
 def pred_audit(split, tag, files):
-    from experiments.driver import pred_audit as pa
+    from experiments.evaluate import pred_audit as pa
     return pa(split, tag, members=[str(f) for f in files], scalars="heads")
 
 
-E4_S_ARCH = None
-
-
-def e4_arch():
-    """Selection gate (archval100 S). A from-scratch run sets MFI_SELECT_GATE_S instead of
-    reading the earlier experiment's result."""
-    if os.environ.get("MFI_SELECT_GATE_S"):
-        return {"S": float(os.environ["MFI_SELECT_GATE_S"])}
-    return rj(EXP / "E4" / "result.json")["archval100"]
+# Selection gate on archval100 S (workflow/config.mk sets MFI_SELECT_GATE_S to the same value).
+SELECT_GATE_S = float(os.environ.get("MFI_SELECT_GATE_S", "0.934308"))
 
 
 # ------------------------------------------------------------------------------------- stages
 def st_truth():
     _data(need_train=False)
-
-
-def st_s1():
-    """Plan step 1: re-select existing E3/E4 checkpoints by the curve-distance objective J."""
-    from experiments.e6 import ensemble_objective
-    out = E6 / "s1.json"
-    if not (EXP / "E4" / "members.json").is_file():  # from-scratch run: nothing to re-select
-        wj(out, {"skipped": "no E3/E4 checkpoints in this run", "files": []})
-        return
-    D = _data(need_train=False)
-    e4_files = rj(EXP / "E4" / "members.json")["files"]
-    res = {"E4_ensemble": ensemble_objective(e4_files, D), "seeds": []}
-    files = []
-    for seed in (101, 202, 303):
-        rows = []
-        for E in ("E3", "E4"):
-            for f in sorted((EXP / E / f"m{seed}").glob("cand_*.member.pt")):
-                ob = ensemble_objective([f], D)
-                rows.append({"E": E, "label": f.name, "file": str(f), **ob})
-                log(f"s1 m{seed} {E} {f.name} J={ob['J']:.5f}")
-        best = min(rows, key=lambda r: r["J"])
-        files.append(best["file"])
-        res["seeds"].append({"seed": seed, "pick": f"{best['E']}/{best['label']}", "rows": rows})
-    res["files"] = files
-    res["S1_ensemble"] = ensemble_objective(files, D)
-    res["S1_archval100"] = pred_audit("archval100", "exp_S1_archval100_hybrid", files)
-    res["E4_archval100"] = e4_arch()
-    wj(out, res)
-    log(f"s1 J E4 {res['E4_ensemble']['J']:.5f} -> S1 {res['S1_ensemble']['J']:.5f}; "
-        f"archival S E4 {res['E4_archval100']['S']} S1 {res['S1_archval100']['S']}")
 
 
 def st_sweep():
@@ -154,12 +116,12 @@ def _st_member(seed):
 
 def st_select():
     """Rank-k ensemble (k-th best EMA state by J of each seed), k = 1, 2, 3; take the first whose
-    archval100 S is not below E4's; if none, the best-S one (reported)."""
+    archval100 S reaches the gate; if none, the best-S one (reported)."""
     from experiments.e6 import ensemble_objective, member_file
     out = E6 / "select.json"
     prev = rj(out) if out.is_file() else {"rows": []}
     D = _data(need_train=False)
-    gate = float(e4_arch()["S"])
+    gate = SELECT_GATE_S
     rows = prev["rows"]
     pick = None
     for k in range(3):
@@ -188,28 +150,17 @@ def st_select():
 
 
 def st_final():
-    """One-time scoring: the three FEC demo shots and the sealed holdout (E6 pick); demo for S1."""
-    from experiments.driver import compare_md
+    """One-time scoring of the selected ensemble: the three validation shots and the sealed holdout."""
     sel = rj(E6 / "select.json")
     files = sel["files"]
     res = {"pick_rank": sel["pick"]}
     res["demo"] = pred_audit("demo", "exp_E6_demo_hybrid", files)
     res["holdout"] = pred_audit("holdout", "exp_E6_holdout_hybrid", files)
-    s1 = rj(E6 / "s1.json")["files"]
-    if s1:
-        res["S1_demo"] = pred_audit("demo", "exp_S1_demo_hybrid", s1)
-    aud = output_dir() / "audit"
-    for name, tag in (("E4", "exp_E4"), ("C2", None)):
-        for split in ("demo", "holdout"):
-            t = f"{tag}_{split}_hybrid" if tag else f"{split}_hybrid_shipped"
-            if (aud / t / "summary.json").is_file():  # earlier references, when present
-                res[f"{name}_{split}"] = rj(aud / t / "summary.json")
-                compare_md(t, f"exp_E6_{split}_hybrid", E6 / f"compare_{split}_{name}.md")
     wj(E6 / "final.json", res)
     log(f"final demo S {res['demo']['S']} holdout S {res['holdout']['S']}")
 
 
-FUNCS = {"truth": st_truth, "s1": st_s1, "sweep": st_sweep, "select": st_select, "final": st_final,
+FUNCS = {"truth": st_truth, "sweep": st_sweep, "select": st_select, "final": st_final,
          **{f"m{s}": (lambda s=s: _st_member(s)) for s in SEEDS}}
 
 

@@ -12,8 +12,7 @@ LAB_CACHE = Path(os.environ.get("MFI_FEATURE_CACHE",
 EXP = Path(os.environ.get("MFI_EXP_DIR", REPO / "outputs" / "experiments"))
 COMMON = EXP / "common"
 SPLITS_JSON = Path(os.environ.get("MFI_SPLITS_JSON", REPO / "data" / "fair_mast" / "experiment_splits_seed42.json"))
-SHIPPED_IP_LO = 328.7293519015368
-SHIPPED_WEIGHTS = REPO / "models" / "m9" / "weights"
+IP_LO = 328.7293519015368
 MEMBER_SEEDS = (101, 202, 303)
 TAGS = {101: "M9_win50_i101", 202: "M9_win50_i202", 303: "M9_win50_i303"}
 

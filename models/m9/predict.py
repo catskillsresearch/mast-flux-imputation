@@ -17,7 +17,7 @@ from models.m9.network import _clip_features, augment_temporal, build_dualctx, r
 
 MEMBER_TAGS = ("M9_win50_i101", "M9_win50_i202", "M9_win50_i303")
 # sha256 of the reference M9 members.
-SHIPPED_SHA256 = {
+WEIGHTS_SHA256 = {
     "M9_win50_i101": "7660c1d3ad26e00ae088eee3a05264b7fb4582562f732ba95d78b66bb1b2cf2a",
     "M9_win50_i202": "06ba7ef2ff6139884e2fcca9d854abb7b294ae663e60af5882c6b7a02d98dace",
     "M9_win50_i303": "de3b695050acd32ef384811c817f242cae20b4dbc677a675eb828e20f00bee1f",
@@ -44,7 +44,7 @@ class M9Ensemble:
             if not path.is_file():
                 raise FileNotFoundError(f"missing M9 member {path}; set M9_WEIGHTS_DIR")
             sha = _sha256(path)
-            if verify_sha and sha != SHIPPED_SHA256[tag]:
+            if verify_sha and sha != WEIGHTS_SHA256[tag]:
                 raise RuntimeError(f"{path} sha256 {sha} is not the reference M9 member "
                                    f"(pass verify_sha=False to use a rebuilt checkpoint)")
             ck = torch.load(path, map_location="cpu", weights_only=False)

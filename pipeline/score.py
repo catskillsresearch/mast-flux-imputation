@@ -16,7 +16,7 @@ from catskills_fec ``local_score.py`` / ``catskills/mast_eval.py`` with MACHINE 
 * D_LCFS = mean over shots of the per-shot mean of min(1, Hausdorff(LCFS_pred, LCFS_gt) / R_geo).
 
     python -m pipeline.score outputs/holdout_hybrid.npz
-    python -m pipeline.score outputs/holdout_osf.npz --json outputs/holdout_osf.score.json
+    python -m pipeline.score outputs/holdout_model.npz --json outputs/holdout_model.score.json
 """
 from __future__ import annotations
 

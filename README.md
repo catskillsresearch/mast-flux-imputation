@@ -82,7 +82,7 @@ bash scripts/run_e6.sh status             # progress
 ```
 
 `scripts/run_e6.sh` runs `python -m experiments.driver_e6` as a detached, resumable job; its stages
-are `truth`, `s1`, `sweep`, `m101` … `m505`, `select`, `final`, and any one can be run with
+are `truth`, `sweep`, `m101` … `m505`, `select`, `final`, and any one can be run with
 `--stage`. Checkpoints are written under `outputs/experiments/` and are not in git.
 
 ## Predict and score

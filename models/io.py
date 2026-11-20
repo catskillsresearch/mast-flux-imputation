@@ -1,4 +1,4 @@
-"""Row I/O shared by OSF, M9, the pipeline and the viewer.
+"""Row I/O shared by the model, the pipeline and the viewer.
 
 ``row_from_parquet`` and ``interpolate`` are copied from catskills_fec
 (``catskills/warm_feature_cache.py`` and ``src/feq/data.py``) without change.
