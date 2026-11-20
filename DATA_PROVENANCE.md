@@ -49,14 +49,7 @@ encode the probes; only the model is probe-free. `pipeline/datasets.inputs_only(
   `data/fair_mast/ingest.py --keys …` and `fetch_efit_labels.py --shots …` into
   `data/fair_mast/validation/` (git-ignored), never used in training or selection.
 
-## 6. Static tables in the archive rows
-
-The archive training rows hold coil-geometry and Thomson-chord tables in the template layout,
-filled from the template's example row. The model reads none of these columns; the grid it uses
-equals `efm/r`, `efm/z`. `data/fair_mast/ingest.py` in this repository fills the grid from `efm`
-and writes no other static table.
-
-## 7. Not in git
+## 6. Not in git
 
 Raw parquet rows, labels, caches, trained `.pt` weights and all outputs are git-ignored; only code,
 manifests (`holdout_seed42.json`, QC lists), `fec_scoring/masks/mast_envelope.npz`, the paper

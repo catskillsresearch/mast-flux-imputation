@@ -62,18 +62,32 @@ deterministic step in the code listed.
 With `--edge-clock training`, rows built from a fresh download give the same features as the
 training rows (`scripts/check_feature_identity.py`).
 
-## Disk and time
+## Measured schedule
 
-About 40 GB under `work/xcheck/`: parquet rows about 27 GB, feature files about 6 GB, labels,
-training data (`data.npz`) and checkpoints the rest. Times on one 16-core machine with a 16 GB GPU:
+One full run on an Intel Core i9-9900K (16 threads, 62 GB RAM) with an NVIDIA GeForce RTX 5060 Ti
+16 GB, started at 13:07:47 and finished at 20:17:13 (7 h 9 min). Times are from `STATUS.json`.
 
-| step | time |
-|---|---|
-| `download` | limited by the archive, about 1 min per shot per process; 12 processes, about 5-6 h |
-| `labels` | about 1.5 s per shot with 16 threads, about 1.5 h (runs after the download) |
-| `cache`, `noplasma`, `prep` | about 20-30 min |
-| `route` | about 8 min |
-| `features`, `smoke` | about 10 min |
-| `truth`, `sweep` | about 20 min |
-| `train` | 11-18 min per seed, about 1.1 h for five |
-| `select`, `score`, `compare` | about 10 min |
+| step | what it does | wall time | bound by |
+|---|---|---:|---|
+| `download` | 3,738 FAIR-MAST shots, 12 processes | 3 h 37 min | network |
+| `cache` | features and flux targets | 1 min 38 s | CPU |
+| `noplasma` | no-plasma screen | 33 s | CPU |
+| `labels` | EFIT++ scalars, 16 threads | 1 h 46 min | network |
+| `prep` | split, QC, \|I_p\| window, PCA, holdout list | 45 s | CPU |
+| `route` | boundary and point labels | 7 min 34 s | CPU |
+| `features` | diff against the lab-drive cache | 10 s | CPU |
+| `validation` | three validation shots | 1 min 41 s | network |
+| `smoke` | reported model on rebuilt rows | 1 min 35 s | GPU + CPU |
+| `truth` | truth tables | 11 s | GPU |
+| `sweep` | 4 settings x 40 epochs | 16 min 40 s | GPU |
+| `train` | five seeds (7 min 35 s to 19 min 43 s each) | 1 h 7 min | GPU |
+| `select` | rank-k ensembles | 6 min 56 s | GPU + CPU |
+| `score` | validation shots and holdout | 1 min 29 s | GPU + CPU |
+| `compare` | vs the reported model | < 1 s | CPU |
+
+Disk: 36 GB under `work/xcheck/` (parquet 27 GB, features 6.1 GB, outputs 2.4 GB, labels 90 MB).
+
+Result of that run: all 3,738 rebuilt shots bit-identical to the lab-drive features, clocks with zero
+offset and unit scale, same sealed split; the reported model on the rebuilt rows gives holdout
+S 0.934444; the retrained ensemble gives holdout S 0.935463 (validation shots 0.898301, reported
+model 0.899573).

@@ -984,7 +984,7 @@ Predictions are \nolinkurl{.npz} files in the template layout with keys \texttt{
 \begin{enumerate}
 \def\labelenumi{\arabic{enumi}.}
 \item
-  \textbf{Training inputs and labels} are FAIR-MAST shots read from \nolinkurl{s3://mast/level1/shots} by \nolinkurl{data/fair_mast/ingest.py}: currents (\texttt{amc}), Thomson (\texttt{ayc}, \texttt{aye}) and EFIT++ (\texttt{efm}). The feature cache is rebuilt exactly from these rows.
+  \textbf{Training inputs and labels} are FAIR-MAST shots read from \nolinkurl{s3://mast/level1/shots} by \nolinkurl{data/fair_mast/ingest.py}: currents (\texttt{amc}), Thomson (\texttt{ayc}, \texttt{aye}) and EFIT++ (\texttt{efm}). The feature cache is rebuilt exactly from these rows, and every model input comes from them.
 \item
   \textbf{Scalar labels} (\(q_{95}\), \(\beta_N\), axis, \(\ell_i\), diverted flag) are read from FAIR-MAST \texttt{efm} by \nolinkurl{data/fair_mast/fetch_efit_labels.py}.
 \item
@@ -995,8 +995,6 @@ Predictions are \nolinkurl{.npz} files in the template layout with keys \texttt{
   \textbf{The three validation shots} are downloaded from FAIR-MAST by the same scripts into \nolinkurl{data/fair_mast/validation/}.
 \item
   \textbf{Scoring code and vessel-envelope mask} (\nolinkurl{fec_scoring/}, \nolinkurl{mast_envelope.npz}) come from the FEC MAST task; the mask is also used by the soft read-outs where no EFIT++ LCFS is available.
-\item
-  \textbf{Static tables.} The archive training rows also hold coil-geometry and Thomson-chord tables in the template layout, filled from the template's example row. The model reads none of these columns; the grid it uses is the EFIT++ grid, which equals \nolinkurl{efm/r}, \nolinkurl{efm/z}.
 \item
   \textbf{No magnetic sensor} is a model input; the EFIT++ labels were reconstructed with magnetic sensors.
 \end{enumerate}
@@ -1027,6 +1025,65 @@ result tables, regenerated from the saved prediction files and audit summaries &
 \end{longtable}
 
 GPU non-determinism means a retrain reproduces the recipe, not the bytes, of a checkpoint.
+
+\hypertarget{rebuild-from-scratch}{%
+\subsection{Rebuild from scratch}\label{rebuild-from-scratch}}
+
+\texttt{bash\ scripts/run\_xcheck.sh} runs \texttt{make\ all}: every step from the FAIR-MAST shot list to the scored ensemble, with nothing taken from an existing data copy. The table gives the measured schedule of one such run on a single workstation (Intel Core i9-9900K, 8 cores / 16 threads, 62 GB RAM, NVIDIA GeForce RTX 5060 Ti 16 GB). Steps run one after another; the download runs 12 processes on chunks of 100 shots and the label fetch 16 threads.
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2308}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2308}}
+  >{\raggedleft\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.3077}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.2308}}@{}}
+\caption{Measured schedule of a full rebuild from FAIR-MAST.}\tabularnewline
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+step
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+what it does
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+wall time
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+bound by
+\end{minipage} \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+step
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+what it does
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+wall time
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+bound by
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\texttt{download} & 3,738 FAIR-MAST shots, one parquet row each & 3 h 37 min & network \\
+\texttt{cache} & 308 inputs and the \(65\times65\) flux target per frame & 1 min 38 s & CPU \\
+\texttt{noplasma} & no-plasma screen & 33 s & CPU \\
+\texttt{labels} & EFIT++ scalars and diverted flag, 3,738 shots & 1 h 46 min & network \\
+\texttt{prep} & split, QC, \(\lvert I_p\rvert\) window, PCA basis, holdout list & 45 s & CPU \\
+\texttt{route} & boundary and point labels, 3,258 shots & 7 min 34 s & CPU \\
+\texttt{features} & feature diff against an existing copy & 10 s & CPU \\
+\texttt{validation} & the three validation shots and their labels & 1 min 41 s & network \\
+\texttt{smoke} & reported model on the rebuilt holdout and validation rows & 1 min 35 s & GPU + CPU \\
+\texttt{truth} & truth tables & 11 s & GPU \\
+\texttt{sweep} & 4 loss-weight settings \(\times\) 40 epochs & 16 min 40 s & GPU \\
+\texttt{train} & five seeds (7 min 35 s to 19 min 43 s each) & 1 h 7 min & GPU \\
+\texttt{select} & rank-\(k\) ensembles on \texttt{archval100} & 6 min 56 s & GPU + CPU \\
+\texttt{score} & validation shots and sealed holdout & 1 min 29 s & GPU + CPU \\
+\texttt{compare} & comparison with the reported model & \textless{} 1 s & CPU \\
+\textbf{total} & & \textbf{7 h 9 min} & \\
+\end{longtable}
+
+The download and the label fetch take 5 h 23 min of the 7 h 9 min; the steps that use the GPU take 1 h 34 min. The run uses 36 GB of disk: parquet rows 27 GB, feature files 6.1 GB, training data, checkpoints and predictions 2.4 GB, labels 90 MB.
+
+Rebuilding from FAIR-MAST alone gives the same inputs bit for bit: for all 3,738 shots the currents, core and edge Thomson columns and the flux targets are identical to the rows the reported model was trained on, every time axis agrees with zero offset and unit scale, and the sealed split is the same. The reported model scores holdout \(S\) = 0.934444 on the rebuilt rows. The ensemble retrained from scratch scores holdout \(S\) = 0.935463 and 0.898301 on the three validation shots, against 0.934444 and 0.899573 for the reported model; the difference is seed-level and GPU non-determinism. The model and numbers reported in this paper are those of the reported ensemble.
 
 \hypertarget{limitations}{%
 \subsection{Limitations}\label{limitations}}
